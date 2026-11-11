@@ -183,7 +183,7 @@ body.noauth nav.bottom{display:none}
 .sitem.free .stext b{white-space:normal}
 .playcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:22px}
 .plat-label{color:var(--muted);font-size:14px;font-weight:600;margin:14px 2px 8px}
-.plats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.plats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .plat{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:16px;background:var(--card2);border:1px solid var(--line);font-weight:700;font-size:13px;color:var(--text)}
 .plat svg{width:26px;height:26px}
 .plat:first-child svg{color:#FF4E45}
@@ -606,6 +606,24 @@ async function toggleInvite(){
   });
 }
 
+async function searchCatalog(q){
+  // Apple's public music catalog, straight from the browser
+  try{
+    const r = await fetch('https://itunes.apple.com/search?media=music&entity=song&limit=14&country=IL&term=' + encodeURIComponent(q));
+    const j = await r.json();
+    const seen = new Set(), out = [];
+    for(const t of j.results || []){
+      if(!t.trackName || !t.artistName) continue;
+      const k = (t.trackName + '|' + t.artistName).toLowerCase();
+      if(seen.has(k)) continue; seen.add(k);
+      out.push({ title: t.trackName, artist: t.artistName, art: (t.artworkUrl100 || '').replace('100x100bb', '300x300bb') || null });
+      if(out.length >= 8) break;
+    }
+    return out;
+  }catch(e){
+    try{ return (await fetch('/api/search?q=' + encodeURIComponent(q)).then(r => r.json())).results || []; }catch(e2){ return []; }
+  }
+}
 function renderCompose(mine, per){
   const box = $('#gCompose');
   const left = Math.max(0, per - mine);
@@ -650,9 +668,8 @@ function renderCompose(mine, per){
     if(q.length < 2){ results = []; draw(); return; }
     draw('loading');
     try{
-      const r = await fetch('/api/search?q=' + encodeURIComponent(q)).then(r => r.json());
+      results = await searchCatalog(q);
       if(q !== input.value.trim()) return;
-      results = r.results || [];
     }catch(e){ results = []; }
     draw();
   }
@@ -688,15 +705,13 @@ function renderPlay(){
   const ids = playable().map(s => s.yt);
   $('#playBtns').innerHTML = `
       <button class="btn full" id="playHere">${playing ? IC.stop + 'עצור' : IC.play + 'נגן כאן את כל הפלייליסט'}</button>
-      <div class="plat-label">או לפתוח ב:</div>
+      <div class="plat-label">או:</div>
       <div class="plats">
         <button class="plat" id="openYT">${IC.yt}<span>YouTube</span></button>
-        <button class="plat" id="openYTM">${IC.ytm}<span>YouTube Music</span></button>
-        <button class="plat" id="shuffleBtn">${IC.shuffle}<span>ערבב</span></button>
+        <button class="plat" id="shuffleBtn">${IC.shuffle}<span>ערבב סדר</span></button>
       </div>`;
   $('#playHere').onclick = e => playing ? stopPlayer() : act(e.currentTarget, async () => { await ensureResolved(); startPlayer(); });
-  $('#openYT').onclick = e => openExternal(e.currentTarget, 'yt');
-  $('#openYTM').onclick = e => openExternal(e.currentTarget, 'ytm');
+  $('#openYT').onclick = e => openExternal(e.currentTarget);
   $('#shuffleBtn').onclick = () => {
     const arr = G.songs.map(s => s.id);
     for(let i = arr.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
@@ -705,17 +720,12 @@ function renderPlay(){
     toast('הסדר עורבב');
   };
 }
-async function openExternal(btn, where){
+async function openExternal(btn){
   const w = window.open('', '_blank');   // open right away so phones don't block it
   await act(btn, ensureResolved);
   const ids = playable().map(s => s.yt).slice(0, 50);
   if(!ids.length){ if(w) w.close(); toast('לא מצאנו את השירים ביוטיוב'); return; }
-  let url = 'https://www.youtube.com/watch_videos?video_ids=' + ids.join(',');
-  if(where === 'ytm'){
-    let list = null;
-    try{ list = (await fetch('/api/ytlist?ids=' + ids.join(',')).then(r => r.json())).list; }catch(e){}
-    url = 'https://music.youtube.com/watch?v=' + ids[0] + (list ? '&list=' + encodeURIComponent(list) : '');
-  }
+  const url = 'https://www.youtube.com/watch_videos?video_ids=' + ids.join(',');
   if(w) w.location = url; else location.href = url;
 }
 function startPlayer(){

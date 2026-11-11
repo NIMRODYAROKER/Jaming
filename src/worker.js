@@ -13,17 +13,6 @@ export default {
     if (url.pathname === '/api/yt') {
       return json({ id: await findYouTube(url.searchParams.get('title') || '', url.searchParams.get('artist') || '') });
     }
-    if (url.pathname === '/api/ytlist') {
-      // turn a list of videos into a temporary YouTube playlist id (works in YouTube Music too)
-      const ids = (url.searchParams.get('ids') || '').split(',').filter(x => /^[A-Za-z0-9_-]{11}$/.test(x)).slice(0, 50);
-      if (!ids.length) return json({ list: null });
-      try {
-        const r = await fetch('https://www.youtube.com/watch_videos?video_ids=' + ids.join(','), { redirect: 'manual', headers: { 'cookie': 'CONSENT=YES+cb; SOCS=CAI' } });
-        const loc = r.headers.get('location') || '';
-        const m = loc.match(/[?&]list=([A-Za-z0-9_-]+)/);
-        return json({ list: m ? m[1] : null });
-      } catch (e) { return json({ list: null }); }
-    }
     if (url.pathname.startsWith('/api/')) {
       const stub = env.DB.get(env.DB.idFromName('main'));
       return stub.fetch(request);
