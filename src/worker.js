@@ -75,20 +75,32 @@ async function oembed(url) {
 export async function searchSongs(q, fetcher = fetch) {
   q = String(q || '').trim().slice(0, 80);
   if (q.length < 2) return [];
-  const url = 'https://itunes.apple.com/search?media=music&entity=song&limit=12&country=IL&term=' + encodeURIComponent(q);
-  const r = await fetcher(url, { cf: { cacheTtl: 86400, cacheEverything: true } });
-  if (!r.ok) return [];
-  const j = await r.json();
   const seen = new Set(), out = [];
-  for (const t of j.results || []) {
-    if (!t.trackName || !t.artistName) continue;
-    const key = (t.trackName + '|' + t.artistName).toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push({ title: t.trackName, artist: t.artistName, art: (t.artworkUrl100 || '').replace('100x100bb', '300x300bb') || null });
-    if (out.length >= 8) break;
+  const push = (title, artist, art) => {
+    if (!title || !artist) return;
+    const key = (title + '|' + artist).toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key); out.push({ title, artist, art: art || null });
+  };
+  // 1) Deezer's public catalog
+  try {
+    const r = await fetcher('https://api.deezer.com/search?limit=12&q=' + encodeURIComponent(q), { headers: { 'accept-language': 'he,en' } });
+    if (r.ok) {
+      const j = await r.json();
+      for (const t of j.data || []) push(t.title, t.artist && t.artist.name, t.album && (t.album.cover_medium || t.album.cover));
+    }
+  } catch (e) {}
+  // 2) Apple's catalog as a backup
+  if (out.length < 3) {
+    try {
+      const r = await fetcher('https://itunes.apple.com/search?media=music&entity=song&limit=12&country=IL&term=' + encodeURIComponent(q), { headers: { 'user-agent': 'Mozilla/5.0' } });
+      if (r.ok) {
+        const j = JSON.parse((await r.text()).trim());
+        for (const t of j.results || []) push(t.trackName, t.artistName, (t.artworkUrl100 || '').replace('100x100bb', '300x300bb'));
+      }
+    } catch (e) {}
   }
-  return out;
+  return out.slice(0, 8);
 }
 
 // ---------- find a song on YouTube by name (no key needed) ----------
@@ -447,7 +459,7 @@ export class MixtapeDB extends DurableObject {
       if (body.title) {
         const title = String(body.title).trim().slice(0, 150), artist = String(body.artist || '').trim().slice(0, 100);
         if (!title) bad('צריך לכתוב שם של שיר');
-        const art = typeof body.art === 'string' && /^https:\/\/[a-z0-9.-]+\.mzstatic\.com\//.test(body.art) ? body.art : null;
+        const art = typeof body.art === 'string' && /^https:\/\/([a-z0-9.-]+\.mzstatic\.com|[a-z0-9.-]+\.dzcdn\.net|api\.deezer\.com)\//.test(body.art) ? body.art : null;
         s = { title, artist, yt: await this.ytFind(title, artist), sp: null, thumb: art, q: null };
         if (!s.thumb && s.yt) s.thumb = `https://i.ytimg.com/vi/${s.yt}/mqdefault.jpg`;
       } else {

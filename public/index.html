@@ -715,10 +715,14 @@ async function toggleInvite(){
 }
 
 async function searchCatalog(q){
-  // Apple's public music catalog, straight from the browser
+  // the server searches music catalogs (works the same on every phone)
   try{
-    const r = await fetch('https://itunes.apple.com/search?media=music&entity=song&limit=14&country=IL&term=' + encodeURIComponent(q));
-    const j = await r.json();
+    const r = await fetch('/api/search?q=' + encodeURIComponent(q)).then(r => r.json());
+    if(r.results && r.results.length) return r.results;
+  }catch(e){}
+  // backup: Apple's catalog straight from the browser
+  try{
+    const j = await fetch('https://itunes.apple.com/search?media=music&entity=song&limit=14&country=IL&term=' + encodeURIComponent(q)).then(r => r.json());
     const seen = new Set(), out = [];
     for(const t of j.results || []){
       if(!t.trackName || !t.artistName) continue;
@@ -728,9 +732,7 @@ async function searchCatalog(q){
       if(out.length >= 8) break;
     }
     return out;
-  }catch(e){
-    try{ return (await fetch('/api/search?q=' + encodeURIComponent(q)).then(r => r.json())).results || []; }catch(e2){ return []; }
-  }
+  }catch(e){ return []; }
 }
 function renderCompose(mine, per){
   const box = $('#gCompose');
