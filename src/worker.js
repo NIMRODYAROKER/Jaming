@@ -200,6 +200,8 @@ export class MixtapeDB extends DurableObject {
     `);
     const cols = this.q('PRAGMA table_info(users)').map(c => c.name);
     if (!cols.includes('email')) this.sql.exec('ALTER TABLE users ADD COLUMN email TEXT');
+    if (!cols.includes('photo')) this.sql.exec('ALTER TABLE users ADD COLUMN photo TEXT');
+    if (!cols.includes('photo_v')) this.sql.exec('ALTER TABLE users ADD COLUMN photo_v INTEGER NOT NULL DEFAULT 0');
     this.sql.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users(email)');
   }
 
@@ -213,7 +215,7 @@ export class MixtapeDB extends DurableObject {
   }
 
   // ---------- helpers ----------
-  pubUser(u) { return u ? { id: u.id, username: u.username, display: u.username, color: u.color } : null; }
+  pubUser(u) { return u ? { id: u.id, username: u.username, display: u.username, color: u.color, photo: u.photo_v ? `/api/u/${u.id}/photo?v=${u.photo_v}` : null } : null; }
   meUser(u) { return u ? { ...this.pubUser(u), email: u.email || '' } : null; }
   auth(request) {
     const h = request.headers.get('authorization') || '';
@@ -277,7 +279,47 @@ export class MixtapeDB extends DurableObject {
       return json({ token: await this.newSession(u.id), me: this.meUser(u) });
     }
 
+    if ((m = path.match(/^\/api\/u\/(\d+)\/photo$/)) && method === 'GET') {
+      const u = this.one('SELECT photo FROM users WHERE id = ?', +m[1]);
+      if (!u || !u.photo) throw new HttpError(404, 'אין תמונה');
+      const bin = Uint8Array.from(atob(u.photo), c => c.charCodeAt(0));
+      return new Response(bin, { headers: { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=31536000, immutable' } });
+    }
+
     const me = this.auth(request);
+
+    if (path === '/api/profile' && method === 'POST') {
+      const username = body.username !== undefined ? String(body.username).trim() : me.username;
+      const email = body.email !== undefined ? String(body.email).trim().toLowerCase() : (me.email || '');
+      if (!/^[A-Za-z0-9_.]{3,20}$/.test(username)) bad('שם משתמש: 3 עד 20 אותיות באנגלית, מספרים, נקודה או קו תחתון');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) bad('כתובת האימייל לא נראית תקינה');
+      const u1 = this.one('SELECT id FROM users WHERE username = ? AND id != ?', username, me.id);
+      if (u1) bad('שם המשתמש הזה תפוס. נסה אחר');
+      const u2 = this.one('SELECT id FROM users WHERE email = ? AND id != ?', email, me.id);
+      if (u2) bad('כבר יש משתמש עם האימייל הזה');
+      this.sql.exec('UPDATE users SET username = ?, display = ?, email = ? WHERE id = ?', username, username, email, me.id);
+      return json({ me: this.meUser(this.one('SELECT * FROM users WHERE id = ?', me.id)) });
+    }
+    if (path === '/api/profile/photo' && method === 'POST') {
+      if (body.data === null) {
+        this.sql.exec('UPDATE users SET photo = NULL, photo_v = 0 WHERE id = ?', me.id);
+      } else {
+        const mm = String(body.data || '').match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/);
+        if (!mm) bad('התמונה לא נקלטה. נסה תמונה אחרת');
+        if (mm[1].length > 400000) bad('התמונה גדולה מדי');
+        this.sql.exec('UPDATE users SET photo = ?, photo_v = photo_v + 1 WHERE id = ?', mm[1], me.id);
+      }
+      return json({ me: this.meUser(this.one('SELECT * FROM users WHERE id = ?', me.id)) });
+    }
+    if (path === '/api/profile/password' && method === 'POST') {
+      const cur = await hashPassword(String(body.current || ''), me.salt);
+      if (!safeEqual(cur, me.pass_hash)) bad('הסיסמה הנוכחית לא נכונה');
+      const next = String(body.next || '');
+      if (next.length < 6) bad('הסיסמה החדשה צריכה לפחות 6 תווים');
+      const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
+      this.sql.exec('UPDATE users SET pass_hash = ?, salt = ? WHERE id = ?', await hashPassword(next, salt), salt, me.id);
+      return json({ ok: true });
+    }
 
     if (path === '/api/logout' && method === 'POST') {
       const token = (request.headers.get('authorization') || '').slice(7);
@@ -336,6 +378,15 @@ export class MixtapeDB extends DurableObject {
       this.sql.exec("INSERT INTO members (group_id, user_id, status, invited_by, created) VALUES (?, ?, 'joined', NULL, ?)", id, me.id, now);
       this.invite(id, me, body.invite);
       return json({ id });
+    }
+    if ((m = path.match(/^\/api\/groups\/([A-Za-z0-9_-]+)$/)) && method === 'DELETE') {
+      const g = this.one('SELECT * FROM groups WHERE id = ?', m[1]);
+      if (!g) throw new HttpError(404, 'הקבוצה לא נמצאה');
+      if (g.owner !== me.id) throw new HttpError(403, 'רק מנהל הקבוצה יכול למחוק אותה');
+      this.sql.exec('DELETE FROM songs WHERE group_id = ?', m[1]);
+      this.sql.exec('DELETE FROM members WHERE group_id = ?', m[1]);
+      this.sql.exec('DELETE FROM groups WHERE id = ?', m[1]);
+      return json({ ok: true });
     }
     if ((m = path.match(/^\/api\/groups\/([A-Za-z0-9_-]+)$/)) && method === 'GET') {
       return json(this.groupView(m[1], me));
@@ -456,10 +507,10 @@ export class MixtapeDB extends DurableObject {
   }
 
   home(me) {
-    const rows = this.q(`SELECT f.*, u.id AS uid, u.username, u.username AS display, u.color FROM friendships f
+    const rows = this.q(`SELECT f.*, u.id AS uid, u.username, u.username AS display, u.color, u.photo_v FROM friendships f
       JOIN users u ON u.id = CASE WHEN f.a = ? THEN f.b ELSE f.a END
       WHERE f.a = ? OR f.b = ? ORDER BY u.username COLLATE NOCASE`, me.id, me.id, me.id);
-    const pub = r => ({ id: r.uid, username: r.username, display: r.display, color: r.color });
+    const pub = r => this.pubUser({ id: r.uid, username: r.username, color: r.color, photo_v: r.photo_v });
     const friends = rows.filter(r => r.status === 'accepted').map(pub);
     const incoming = rows.filter(r => r.status === 'pending' && r.requester !== me.id).map(pub);
     const outgoing = rows.filter(r => r.status === 'pending' && r.requester === me.id).map(pub);
@@ -483,7 +534,7 @@ export class MixtapeDB extends DurableObject {
     const g = this.one('SELECT * FROM groups WHERE id = ?', gid);
     const mine = g && this.membership(gid, me.id);
     if (!g || !mine) throw new HttpError(404, 'הקבוצה לא נמצאה, או שאין לך הזמנה אליה');
-    const members = this.q(`SELECT u.id, u.username, u.username AS display, u.color, m.status, m.created FROM members m JOIN users u ON u.id = m.user_id
+    const members = this.q(`SELECT u.id, u.username, u.username AS display, u.color, u.photo_v, m.status, m.created FROM members m JOIN users u ON u.id = m.user_id
       WHERE m.group_id = ? ORDER BY m.status = 'invited', m.created`, gid);
     const songs = mine.status === 'joined'
       ? this.q('SELECT id, user_id, title, artist, yt, sp, thumb, q, created FROM songs WHERE group_id = ? ORDER BY created', gid)
@@ -491,7 +542,7 @@ export class MixtapeDB extends DurableObject {
     return {
       group: { id: g.id, name: g.name, per: g.per, owner: g.owner },
       myStatus: mine.status,
-      members, songs,
+      members: members.map(x => ({ ...x, photo: x.photo_v ? `/api/u/${x.id}/photo?v=${x.photo_v}` : null })), songs,
       songCount: this.one('SELECT COUNT(*) AS c FROM songs WHERE group_id = ?', gid).c
     };
   }
