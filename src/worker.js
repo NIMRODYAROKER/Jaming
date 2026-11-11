@@ -514,7 +514,7 @@ export class MixtapeDB extends DurableObject {
     const friends = rows.filter(r => r.status === 'accepted').map(pub);
     const incoming = rows.filter(r => r.status === 'pending' && r.requester !== me.id).map(pub);
     const outgoing = rows.filter(r => r.status === 'pending' && r.requester === me.id).map(pub);
-    const groups = this.q(`SELECT g.id, g.name, g.per, m.status, m.created AS since, m.invited_by,
+    const groups = this.q(`SELECT g.id, g.name, g.per, g.owner, m.status, m.created AS since, m.invited_by,
         (SELECT COUNT(*) FROM songs s WHERE s.group_id = g.id) AS songs,
         (SELECT COUNT(*) FROM members x WHERE x.group_id = g.id AND x.status = 'joined') AS people,
         (SELECT MAX(created) FROM songs s WHERE s.group_id = g.id) AS last
@@ -526,7 +526,7 @@ export class MixtapeDB extends DurableObject {
     return {
       me: this.meUser(me), friends, incoming, outgoing,
       invites: groups.filter(g => g.status === 'invited').map(g => ({ id: g.id, name: g.name, people: g.people, by: inviters[g.invited_by] || null })),
-      groups: groups.filter(g => g.status === 'joined').map(g => ({ id: g.id, name: g.name, songs: g.songs, people: g.people, per: g.per }))
+      groups: groups.filter(g => g.status === 'joined').map(g => ({ id: g.id, name: g.name, songs: g.songs, people: g.people, per: g.per, mine: g.owner === me.id }))
     };
   }
 

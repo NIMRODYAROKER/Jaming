@@ -167,7 +167,7 @@ nav.bottom .badge{position:absolute;top:2px;left:calc(50% - 24px)}
 .fab{position:absolute;left:50%;top:-38px;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;padding:3px;background:var(--grad);box-shadow:0 10px 26px rgba(226,62,122,.45),0 0 0 6px rgba(29,26,33,.95);display:block;transition:transform .15s}
 .fab:active{transform:translateX(-50%) scale(.95)}
 .fab .avatar{width:100%;height:100%;font-size:26px;border:3px solid #1D1A21;box-shadow:none;object-fit:cover}
-.fab svg{width:100%;height:100%;padding:16px;color:#24093D}
+.fab > svg{width:100%;height:100%;padding:16px;color:#24093D}
 .fab.on{box-shadow:0 10px 30px rgba(255,122,89,.6),0 0 0 6px rgba(29,26,33,.95)}
 img.avatar{object-fit:cover;background:#333}
 .profile{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:26px}
@@ -216,6 +216,13 @@ body.noauth nav.bottom{display:none}
 .track.now .ttitle{color:#FFB79F}
 .track.now .num{color:transparent;background:radial-gradient(circle,var(--accent) 0 30%,transparent 32%)}
 .player #ytp,.player iframe{width:100%;height:100%;border:0;display:block}
+.gitem{padding:0;gap:0}
+.glink{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:12px 14px;text-decoration:none}
+.gitem>svg{margin:0 14px 0 12px;flex:none}
+.gdel{width:40px;height:40px;margin-left:10px;border-radius:50%;display:grid;place-items:center;flex:none;color:#FF8E8E;background:rgba(255,142,142,.08)}
+.gdel svg{width:19px;height:19px}
+.avatar.ph{color:rgba(255,255,255,.92);overflow:hidden;align-items:end}
+.avatar.ph svg{width:74%;height:74%;margin-top:26%;padding:0}
 </style>
 </head>
 <body class="noauth">
@@ -252,6 +259,7 @@ const IC = {
   wa:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3a.5.5 0 0 0 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.7 11.7 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.7-1.2 2.2 2.2 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3z"/></svg>',
   ytm:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M10.8 10.2v3.6l3-1.8z" fill="currentColor" stroke="none"/></svg>',
   camera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>',
@@ -306,7 +314,7 @@ async function act(btn, fn){
 }
 const avatar = u => u && u.photo
   ? `<img class="avatar" src="${esc(u.photo)}" alt="">`
-  : `<span class="avatar" style="background:${esc(u && u.color || '#888')}">${esc(((u && (u.username || u.display)) || '?').trim().charAt(0).toUpperCase())}</span>`;
+  : `<span class="avatar ph" style="background:${esc(u && u.color || '#888')}"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="4.2"/><path d="M3.8 21.5c.7-4.4 4.1-7.1 8.2-7.1s7.5 2.7 8.2 7.1z"/></svg></span>`;
 const plural = (n, one, many) => n === 1 ? one : n + ' ' + many;
 const ytSearch = q => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
 const spSearch = q => 'https://open.spotify.com/search/' + encodeURIComponent(q);
@@ -423,14 +431,20 @@ async function renderGroups(){
         </div>`).join('')}</div>` : ''}
       <a class="btn full" href="#/new" style="margin-bottom:18px">${IC.plus}קבוצה חדשה</a>
       ${H.groups.length ? `<div class="list">${H.groups.map(g => `
-        <a class="item" href="#/g/${esc(g.id)}">
-          <span class="gicon">${IC.note}</span>
-          <div class="grow"><b>${esc(g.name)}</b><small>${plural(g.songs, 'שיר אחד', 'שירים')} · ${plural(g.people, 'חבר אחד', 'חברים')}</small></div>
-          ${IC.arrow}
-        </a>`).join('')}</div>`
+        <div class="item gitem">
+          <a class="glink" href="#/g/${esc(g.id)}">
+            <span class="gicon">${IC.note}</span>
+            <div class="grow"><b>${esc(g.name)}</b><small>${plural(g.songs, 'שיר אחד', 'שירים')} · ${plural(g.people, 'חבר אחד', 'חברים')}${g.mine ? ' · מנהל' : ''}</small></div>
+          </a>
+          ${g.mine ? `<button class="gdel" data-delg="${esc(g.id)}" data-name="${esc(g.name)}" aria-label="מחיקת הקבוצה">${IC.trash}</button>` : IC.arrow}
+        </div>`).join('')}</div>`
       : `<div class="card empty"><b>עוד אין לך קבוצות</b>${H.friends.length ? 'פתח קבוצה והזמן את החברים שלך.' : 'קודם תוסיף חברים בלשונית "חברים", ואז תפתח קבוצה.'}</div>`}
     `;
     $$('[data-acc]').forEach(b => b.onclick = () => act(b, async () => { await api('POST', `/groups/${b.dataset.acc}/accept`); location.hash = '#/g/' + b.dataset.acc; }));
+    $$('[data-delg]').forEach(b => b.onclick = () => {
+      if(!confirm(`למחוק את הקבוצה "${b.dataset.name}"? כל השירים יימחקו והקבוצה תיעלם אצל כל החברים. אי אפשר לבטל.`)) return;
+      act(b, async () => { await api('DELETE', '/groups/' + b.dataset.delg); await loadHome(); draw(); toast('הקבוצה נמחקה'); });
+    });
     $$('[data-dec]').forEach(b => b.onclick = () => act(b, async () => { await api('POST', `/groups/${b.dataset.dec}/decline`); await loadHome(); renderNav('groups'); draw(); }));
   };
   if(HOME) draw();
@@ -670,12 +684,7 @@ function renderGroup(){
   renderPlay();
   renderTracks();
   if(!$('#leaveBtn')){
-    $('#gLeave').innerHTML = `<button class="linkbtn" id="leaveBtn">יציאה מהקבוצה</button>${g.owner === ME.id ? `<br><button class="linkbtn danger" id="delGroup" style="margin-top:14px">מחיקת הקבוצה</button>` : ''}`;
-    const dg = $('#delGroup');
-    if(dg) dg.onclick = () => {
-      if(!confirm(`למחוק את הקבוצה "${g.name}"? כל השירים יימחקו והקבוצה תיעלם אצל כל החברים. אי אפשר לבטל.`)) return;
-      act(dg, async () => { await api('DELETE', `/groups/${g.id}`); HOME = null; location.hash = '#/'; toast('הקבוצה נמחקה'); });
-    };
+    $('#gLeave').innerHTML = `<button class="linkbtn" id="leaveBtn">יציאה מהקבוצה</button>`;
     $('#leaveBtn').onclick = e => {
       if(!confirm('לצאת מהקבוצה? השירים שהוספת יימחקו ממנה.')) return;
       act(e.currentTarget, async () => { await api('POST', `/groups/${g.id}/leave`); HOME = null; location.hash = '#/'; });
