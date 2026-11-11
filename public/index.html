@@ -181,7 +181,9 @@ body.noauth nav.bottom{display:none}
 .sitem.free{background:transparent;border-style:dashed}
 .sitem.free .sadd{background:var(--card2);color:var(--text)}
 .sitem.free .stext b{white-space:normal}
-.playcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:22px}
+.playcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:14px;margin-bottom:22px}
+.playcard .player{box-shadow:none;margin-bottom:12px}
+.plats{margin-top:10px}
 .plat-label{color:var(--muted);font-size:14px;font-weight:600;margin:14px 2px 8px}
 .plats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .plat{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:16px;background:var(--card2);border:1px solid var(--line);font-weight:700;font-size:13px;color:var(--text)}
@@ -535,6 +537,7 @@ async function openGroup(id){
   renderGroupShell();
   renderGroup();
   startPoll(refreshGroup, 5000);
+  if(G.myStatus === 'joined') ensureResolved();
 }
 async function refreshGroup(){
   if(!G) return;
@@ -701,40 +704,14 @@ function sorted(list){
 }
 const playable = () => sorted(G.songs.filter(s => s.yt));
 async function ensureResolved(){
-  if(!G.songs.some(s => !s.yt)) return;
-  try{ await api('POST', `/groups/${G.group.id}/resolve`); await refreshGroup(); }catch(e){}
+  if(!G || !G.songs.some(s => !s.yt)) return;
+  try{ const r = await api('POST', `/groups/${G.group.id}/resolve`); if(r.found) await refreshGroup(); }catch(e){}
 }
-function renderPlay(){
-  const box = $('#gPlay');
-  if(!G.songs.length){ box.innerHTML = ''; return; }
-  if(!$('#playBtns', box)) box.innerHTML = `<div id="playerSlot"></div><div class="playcard" id="playBtns"></div>`;
-  const ids = playable().map(s => s.yt);
-  $('#playBtns').innerHTML = `
-      <button class="btn full" id="playHere">${playing ? IC.stop + 'עצור' : IC.play + 'נגן כאן את כל הפלייליסט'}</button>
-      <div class="plat-label">או:</div>
-      <div class="plats">
-        <button class="plat" id="openYT">${IC.yt}<span>YouTube</span></button>
-        <button class="plat" id="shuffleBtn">${IC.shuffle}<span>ערבב סדר</span></button>
-      </div>`;
-  $('#playHere').onclick = e => playing ? stopPlayer() : act(e.currentTarget, async () => { await ensureResolved(); startPlayer(); });
-  $('#openYT').onclick = e => openExternal(e.currentTarget);
-  $('#shuffleBtn').onclick = () => {
-    const arr = G.songs.map(s => s.id);
-    for(let i = arr.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
-    order = arr; renderTracks(); renderPlay();
-    if(playing) startPlayer();
-    toast('הסדר עורבב');
-  };
-}
-async function openExternal(btn){
-  const w = window.open('', '_blank');   // open right away so phones don't block it
-  await act(btn, ensureResolved);
-  const ids = playable().map(s => s.yt).slice(0, 50);
-  if(!ids.length){ if(w) w.close(); toast('לא מצאנו את השירים ביוטיוב'); return; }
-  const url = 'https://www.youtube.com/watch_videos?video_ids=' + ids.join(',');
-  if(w) w.location = url; else location.href = url;
-}
-let YTP = null, nowId = null, ytApi = null;
+
+/* The YouTube player is created (paused, ready) as soon as the group opens,
+   so a tap on "play" can start it instantly - phones only allow sound
+   when playback starts right inside the tap. */
+let YTP = null, ytReady = false, cuedKey = '', nowId = null, ytApi = null;
 function loadYTApi(){
   if(ytApi) return ytApi;
   ytApi = new Promise(res => {
@@ -744,43 +721,91 @@ function loadYTApi(){
   });
   return ytApi;
 }
-function markNow(){
-  $$('.track').forEach(li => li.classList.toggle('now', !!nowId && li.dataset.id === nowId));
-}
-async function startPlayer(fromId){
-  const list = playable(), ids = list.map(s => s.yt);
-  if(!ids.length){ toast('לא מצאנו את השירים ביוטיוב'); return; }
-  const start = Math.max(0, fromId ? list.findIndex(s => s.id === fromId) : 0);
-  playing = true; document.body.classList.add('playing');
-  renderPlay();
-  if(YTP && YTP.loadPlaylist && $('#ytp')){
-    YTP.loadPlaylist(ids, start);
-  } else {
-    $('#playerSlot').innerHTML = `<div class="player"><div id="ytp"></div></div>`;
-    await loadYTApi();
+const currentIds = () => playable().map(s => s.yt).slice(0, 200);
+function ensurePlayer(){
+  const slot = $('#playerSlot');
+  if(!slot || $('#ytp', slot)) return;
+  slot.innerHTML = `<div class="player"><div id="ytp"></div></div>`;
+  YTP = null; ytReady = false; cuedKey = '';
+  loadYTApi().then(() => {
+    if(!$('#ytp')) return;
     YTP = new YT.Player('ytp', {
       host: 'https://www.youtube-nocookie.com',
       width: '100%', height: '100%',
-      playerVars: { playsinline: 1, rel: 0, autoplay: 1 },
+      playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
       events: {
-        onReady: e => e.target.loadPlaylist(ids, start),
+        onReady: () => { ytReady = true; syncCue(); },
         onStateChange: e => {
-          const pl = e.target.getPlaylist ? e.target.getPlaylist() : null;
-          const i = e.target.getPlaylistIndex ? e.target.getPlaylistIndex() : -1;
-          if(pl && i >= 0){ const song = playable().find(s => s.yt === pl[i]); nowId = song ? song.id : null; markNow(); }
+          const was = playing;
+          playing = e.data === 1 || e.data === 3;
+          document.body.classList.toggle('playing', playing);
+          try{
+            const pl = YTP.getPlaylist(), i = YTP.getPlaylistIndex();
+            if(pl && i >= 0){ const song = playable().find(s => s.yt === pl[i]); nowId = song ? song.id : nowId; markNow(); }
+          }catch(x){}
+          if(was !== playing) updatePlayBtn();
         },
-        onError: e => { try{ e.target.nextVideo(); }catch(x){} }
+        onError: () => { try{ YTP.nextVideo(); }catch(x){} }
       }
     });
-  }
-  $('#playerSlot').scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+}
+function syncCue(){
+  if(!ytReady || playing) return;
+  const ids = currentIds(), key = ids.join(',');
+  if(!ids.length || key === cuedKey) return;
+  YTP.cuePlaylist(ids, 0); cuedKey = key;
+}
+// must run synchronously inside the tap
+function playFrom(songId){
+  if(!ytReady){ toast('הנגן נטען, נסה שוב בעוד שנייה'); return; }
+  const list = playable(), ids = list.map(s => s.yt), key = ids.join(',');
+  if(!ids.length){ toast('לא מצאנו את השירים ביוטיוב'); return; }
+  const idx = songId ? Math.max(0, list.findIndex(s => s.id === songId)) : 0;
+  if(songId || key !== cuedKey){ YTP.loadPlaylist(ids, idx); cuedKey = key; }
+  else YTP.playVideo();
+  playing = true; document.body.classList.add('playing'); updatePlayBtn();
+}
+function markNow(){ $$('.track').forEach(li => li.classList.toggle('now', !!nowId && li.dataset.id === nowId)); }
+function updatePlayBtn(){
+  const b = $('#playHere'); if(!b) return;
+  b.innerHTML = playing ? IC.stop + 'עצור' : IC.play + 'נגן את הפלייליסט';
+}
+function renderPlay(){
+  const box = $('#gPlay');
+  if(!G.songs.length){ if(YTP) stopPlayer(true); box.innerHTML = ''; return; }
+  if(!$('#playBtns', box)) box.innerHTML = `<div class="playcard"><div id="playerSlot"></div><div id="playBtns"></div></div>`;
+  ensurePlayer();
+  syncCue();
+  $('#playBtns').innerHTML = `
+      <button class="btn full" id="playHere"></button>
+      <div class="plats">
+        <button class="plat" id="openYT">${IC.yt}<span>פתח ביוטיוב</span></button>
+        <button class="plat" id="shuffleBtn">${IC.shuffle}<span>ערבב סדר</span></button>
+      </div>`;
+  updatePlayBtn();
+  $('#playHere').onclick = () => {
+    if(playing){ try{ YTP.pauseVideo(); }catch(e){} playing = false; document.body.classList.remove('playing'); updatePlayBtn(); return; }
+    playFrom(null);
+  };
+  $('#openYT').onclick = () => {
+    const ids = currentIds().slice(0, 50);
+    if(!ids.length){ toast('לא מצאנו את השירים ביוטיוב'); return; }
+    window.open('https://www.youtube.com/watch_videos?video_ids=' + ids.join(','), '_blank');
+  };
+  $('#shuffleBtn').onclick = () => {
+    const arr = G.songs.map(s => s.id);
+    for(let i = arr.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+    order = arr; renderTracks();
+    if(playing) playFrom(playable()[0] && playable()[0].id); else syncCue();
+    toast('הסדר עורבב');
+  };
 }
 function stopPlayer(silent){
   playing = false; document.body.classList.remove('playing');
   try{ if(YTP && YTP.destroy) YTP.destroy(); }catch(e){}
-  YTP = null; nowId = null; markNow();
+  YTP = null; ytReady = false; cuedKey = ''; nowId = null;
   const slot = $('#playerSlot'); if(slot) slot.innerHTML = '';
-  if(!silent && G) renderPlay();
 }
 
 /* ---------- tracklist ---------- */
@@ -808,10 +833,16 @@ function renderTracks(){
         </div>
         ${canDel ? `<button class="del" data-del="${esc(s.id)}" aria-label="מחק">${IC.x}</button>` : ''}
       </li>`;
-    }).join('')}</ol>`;
+    }).join('')}</ol>
+    ${isOwner ? `<div class="center"><button class="linkbtn" id="resetBtn">איפוס הפלייליסט (מחיקת כל השירים)</button></div>` : ''}`;
+  const rb = $('#resetBtn', box);
+  if(rb) rb.onclick = () => {
+    if(!confirm('למחוק את כל השירים בפלייליסט? החברים יוכלו להוסיף שירים חדשים מההתחלה.')) return;
+    act(rb, async () => { await api('POST', `/groups/${G.group.id}/reset`); order = null; stopPlayer(true); $('#gPlay').innerHTML = ''; composeKey = null; await refreshGroup(); toast('הפלייליסט אופס'); });
+  };
   $$('.track.can', box).forEach(li => li.onclick = e => {
     if(e.target.closest('.del')) return;
-    startPlayer(li.dataset.id).catch(err => toast(err.message));
+    playFrom(li.dataset.id);
   });
   $$('[data-del]', box).forEach(b => b.onclick = () => act(b, async () => {
     await api('DELETE', `/groups/${G.group.id}/songs/${b.dataset.del}`);

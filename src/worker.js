@@ -369,6 +369,13 @@ export class MixtapeDB extends DurableObject {
       }
       return json({ ok: true });
     }
+    if ((m = path.match(/^\/api\/groups\/([A-Za-z0-9_-]+)\/reset$/)) && method === 'POST') {
+      this.needJoined(m[1], me.id);
+      const g = this.one('SELECT * FROM groups WHERE id = ?', m[1]);
+      if (g.owner !== me.id) throw new HttpError(403, 'רק מי שפתח את הקבוצה יכול לאפס אותה');
+      this.sql.exec('DELETE FROM songs WHERE group_id = ?', m[1]);
+      return json({ ok: true });
+    }
     if ((m = path.match(/^\/api\/groups\/([A-Za-z0-9_-]+)\/resolve$/)) && method === 'POST') {
       this.needJoined(m[1], me.id);
       const missing = this.q('SELECT * FROM songs WHERE group_id = ? AND yt IS NULL LIMIT 15', m[1]);
