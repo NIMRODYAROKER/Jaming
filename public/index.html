@@ -164,7 +164,7 @@ nav.bottom a[aria-current=page]{color:var(--accent)}
 nav.bottom a[aria-current=page]::after{content:"";position:absolute;bottom:-4px;width:18px;height:3px;border-radius:2px;background:var(--grad)}
 nav.bottom .badge{position:absolute;top:2px;left:calc(50% - 24px)}
 .fab-cell{position:relative;height:100%}
-.fab{position:absolute;left:50%;top:-38px;transform:translateX(-50%);width:70px;height:70px;border-radius:50%;padding:3px;background:var(--grad);box-shadow:0 10px 26px rgba(226,62,122,.45),0 0 0 6px rgba(29,26,33,.95);display:block;transition:transform .15s}
+.fab{position:absolute;left:50%;top:-44px;transform:translateX(-50%);width:78px;height:78px;border-radius:50%;padding:3px;background:var(--grad);box-shadow:0 10px 26px rgba(226,62,122,.45),0 0 0 6px rgba(29,26,33,.95);display:block;transition:transform .15s}
 .fab:active{transform:translateX(-50%) scale(.95)}
 .fab .avatar{width:100%;height:100%;font-size:26px;border:3px solid #1D1A21;box-shadow:none;object-fit:cover}
 .fab > svg{width:100%;height:100%;padding:16px;color:#24093D}
@@ -221,8 +221,8 @@ body.noauth nav.bottom{display:none}
 .gitem>svg{margin:0 14px 0 12px;flex:none}
 .gdel{width:40px;height:40px;margin-left:10px;border-radius:50%;display:grid;place-items:center;flex:none;color:#FF8E8E;background:rgba(255,142,142,.08)}
 .gdel svg{width:19px;height:19px}
-.avatar.ph{color:rgba(255,255,255,.92);overflow:hidden;align-items:end}
-.avatar.ph svg{width:74%;height:74%;margin-top:26%;padding:0}
+.avatar.ph{background:#4A4550;color:#D8D2DC;overflow:hidden;display:grid;place-items:center}
+.avatar.ph svg{width:86%;height:86%;margin:0;padding:0;transform:translateY(-5%)}
 </style>
 </head>
 <body class="noauth">
@@ -314,7 +314,7 @@ async function act(btn, fn){
 }
 const avatar = u => u && u.photo
   ? `<img class="avatar" src="${esc(u.photo)}" alt="">`
-  : `<span class="avatar ph" style="background:${esc(u && u.color || '#888')}"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="4.2"/><path d="M3.8 21.5c.7-4.4 4.1-7.1 8.2-7.1s7.5 2.7 8.2 7.1z"/></svg></span>`;
+  : `<span class="avatar ph"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="4.2"/><path d="M3.8 21.5c.7-4.4 4.1-7.1 8.2-7.1s7.5 2.7 8.2 7.1z"/></svg></span>`;
 const plural = (n, one, many) => n === 1 ? one : n + ' ' + many;
 const ytSearch = q => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
 const spSearch = q => 'https://open.spotify.com/search/' + encodeURIComponent(q);
