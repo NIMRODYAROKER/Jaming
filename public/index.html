@@ -324,7 +324,7 @@ function renderAuth(){
     app.innerHTML = `
       <h1>כל אחד שם שיר.<br>יוצא <mark>פלייליסט.</mark></h1>
       <p class="lead">פותחים קבוצה, מזמינים חברים, כל אחד מוסיף את השיר שלו ומנגנים הכל ביחד.</p>
-      <form class="card" id="authForm" autocomplete="on">
+      <form class="card" id="authForm" autocomplete="on" novalidate>
         <div class="tabs"><button type="button" data-m="signup" aria-pressed="${mode === 'signup'}">הרשמה</button><button type="button" data-m="login" aria-pressed="${mode === 'login'}">כניסה</button></div>
         <div class="field"><label for="fEmail">אימייל</label><input type="email" class="ltr" id="fEmail" maxlength="120" placeholder="name@gmail.com" autocomplete="email" autocapitalize="off" spellcheck="false"></div>
         ${mode === 'signup' ? `<div class="field"><label for="fUser">שם משתמש</label><input type="text" class="ltr" id="fUser" maxlength="20" placeholder="באנגלית, למשל nimrod" autocomplete="username" autocapitalize="off" spellcheck="false">
@@ -339,13 +339,17 @@ function renderAuth(){
       const btn = $('#fBtn'); $('#fErr').textContent = '';
       const body = { email: $('#fEmail').value.trim(), password: $('#fPass').value };
       if(mode === 'signup') body.username = $('#fUser').value.trim();
+      const showErr = m => { $('#fErr').textContent = m; $('#fErr').scrollIntoView({ block:'center', behavior:'smooth' }); };
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(body.email)) return showErr('צריך לכתוב אימייל תקין, למשל name@gmail.com');
+      if(mode === 'signup' && !/^[A-Za-z0-9_.]{3,20}$/.test(body.username)) return showErr('שם משתמש: 3 עד 20 אותיות באנגלית או מספרים, בלי רווחים');
+      if(body.password.length < (mode === 'signup' ? 6 : 1)) return showErr(mode === 'signup' ? 'הסיסמה צריכה לפחות 6 תווים' : 'צריך לכתוב סיסמה');
       busy(btn, true);
       try{
         const r = await api('POST', mode === 'signup' ? '/signup' : '/login', body);
         token = r.token; ME = r.me; ls.set('mx_token', token); ls.set('mx_me', ME); ls.set('mx_seen', true);
         if(ls.get('mx_pending_add', null)) location.hash = '#/add/' + ls.get('mx_pending_add');
         route();
-      }catch(err){ busy(btn, false); $('#fErr').textContent = err.message; }
+      }catch(err){ busy(btn, false); showErr(err.message); }
     };
   };
   draw();
@@ -389,7 +393,7 @@ async function renderNew(){
   let per = 1;
   const friends = HOME.friends;
   app.innerHTML = `
-    <form class="card" id="newForm" autocomplete="off">
+    <form class="card" id="newForm" autocomplete="off" novalidate>
       <h2>קבוצה חדשה</h2>
       <div class="field"><label for="gName">שם הקבוצה</label><input type="text" id="gName" maxlength="40" placeholder="למשל: נסיעה לצפון"></div>
       <div class="field"><label>כמה שירים כל אחד מוסיף?</label>
@@ -589,7 +593,7 @@ function renderCompose(mine, per){
     return;
   }
   box.innerHTML = `
-    <form class="card" id="addForm" autocomplete="off">
+    <form class="card" id="addForm" autocomplete="off" novalidate>
       <h2>תוסיף שיר</h2>
       <div class="addrow">
         <input type="text" id="songInput" placeholder="קישור מיוטיוב / ספוטיפיי או שם של שיר" maxlength="300">
