@@ -6,6 +6,24 @@ import { DurableObject } from 'cloudflare:workers';
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === '/api/search') {
+      try { return json({ results: await searchSongs(url.searchParams.get('q') || '') }); }
+      catch (e) { return json({ results: [] }); }
+    }
+    if (url.pathname === '/api/yt') {
+      return json({ id: await findYouTube(url.searchParams.get('title') || '', url.searchParams.get('artist') || '') });
+    }
+    if (url.pathname === '/api/ytlist') {
+      // turn a list of videos into a temporary YouTube playlist id (works in YouTube Music too)
+      const ids = (url.searchParams.get('ids') || '').split(',').filter(x => /^[A-Za-z0-9_-]{11}$/.test(x)).slice(0, 50);
+      if (!ids.length) return json({ list: null });
+      try {
+        const r = await fetch('https://www.youtube.com/watch_videos?video_ids=' + ids.join(','), { redirect: 'manual', headers: { 'cookie': 'CONSENT=YES+cb; SOCS=CAI' } });
+        const loc = r.headers.get('location') || '';
+        const m = loc.match(/[?&]list=([A-Za-z0-9_-]+)/);
+        return json({ list: m ? m[1] : null });
+      } catch (e) { return json({ list: null }); }
+    }
     if (url.pathname.startsWith('/api/')) {
       const stub = env.DB.get(env.DB.idFromName('main'));
       return stub.fetch(request);
@@ -64,6 +82,48 @@ async function oembed(url) {
     return await r.json();
   } catch (e) { return null; }
 }
+// ---------- song search (Apple's public music catalog, no key needed) ----------
+export async function searchSongs(q, fetcher = fetch) {
+  q = String(q || '').trim().slice(0, 80);
+  if (q.length < 2) return [];
+  const url = 'https://itunes.apple.com/search?media=music&entity=song&limit=12&country=IL&term=' + encodeURIComponent(q);
+  const r = await fetcher(url, { cf: { cacheTtl: 86400, cacheEverything: true } });
+  if (!r.ok) return [];
+  const j = await r.json();
+  const seen = new Set(), out = [];
+  for (const t of j.results || []) {
+    if (!t.trackName || !t.artistName) continue;
+    const key = (t.trackName + '|' + t.artistName).toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ title: t.trackName, artist: t.artistName, art: (t.artworkUrl100 || '').replace('100x100bb', '300x300bb') || null });
+    if (out.length >= 8) break;
+  }
+  return out;
+}
+
+// ---------- find a song on YouTube by name (no key needed) ----------
+export async function findYouTube(title, artist, fetcher = fetch) {
+  const q = [artist, title].filter(Boolean).join(' - ');
+  if (!q) return null;
+  try {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 8000);
+    const r = await fetcher('https://www.youtube.com/results?hl=en&gl=IL&search_query=' + encodeURIComponent(q), {
+      signal: ctrl.signal,
+      headers: {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+        'accept-language': 'en-US,en;q=0.9,he;q=0.8',
+        'cookie': 'CONSENT=YES+cb.20240101-00-p0.en+FX+000; SOCS=CAI'
+      }
+    });
+    clearTimeout(t);
+    if (!r.ok) return null;
+    const html = await r.text();
+    const m = html.match(/"videoRenderer":\{"videoId":"([A-Za-z0-9_-]{11})"/) || html.match(/"videoId":"([A-Za-z0-9_-]{11})"/);
+    return m ? m[1] : null;
+  } catch (e) { return null; }
+}
+
 export async function resolveSong(raw, lookup = oembed) {
   raw = String(raw || '').trim().slice(0, 300);
   if (!raw) bad('צריך לכתוב שיר או להדביק קישור');
@@ -93,6 +153,7 @@ export class MixtapeDB extends DurableObject {
     super(ctx, env);
     this.sql = ctx.storage.sql;
     this.lookup = oembed;
+    this.ytFind = findYouTube;
     this.migrate();
   }
 
@@ -319,13 +380,33 @@ export class MixtapeDB extends DurableObject {
       }
       return json({ ok: true });
     }
+    if ((m = path.match(/^\/api\/groups\/([A-Za-z0-9_-]+)\/resolve$/)) && method === 'POST') {
+      this.needJoined(m[1], me.id);
+      const missing = this.q('SELECT * FROM songs WHERE group_id = ? AND yt IS NULL LIMIT 15', m[1]);
+      let found = 0;
+      for (const song of missing) {
+        const yt = await this.ytFind(song.title, song.artist);
+        if (yt) { this.sql.exec('UPDATE songs SET yt = ?, thumb = COALESCE(thumb, ?) WHERE id = ?', yt, `https://i.ytimg.com/vi/${yt}/mqdefault.jpg`, song.id); found++; }
+      }
+      return json({ ok: true, found });
+    }
     if ((m = path.match(/^\/api\/groups\/([A-Za-z0-9_-]+)\/songs$/)) && method === 'POST') {
       const gid = m[1];
       this.needJoined(gid, me.id);
       const g = this.one('SELECT * FROM groups WHERE id = ?', gid);
       const mine = this.one('SELECT COUNT(*) AS c FROM songs WHERE group_id = ? AND user_id = ?', gid, me.id).c;
       if (mine >= g.per) bad('כבר הוספת את כל השירים שלך');
-      const s = await resolveSong(body.input, this.lookup);
+      let s;
+      if (body.title) {
+        const title = String(body.title).trim().slice(0, 150), artist = String(body.artist || '').trim().slice(0, 100);
+        if (!title) bad('צריך לכתוב שם של שיר');
+        const art = typeof body.art === 'string' && /^https:\/\/[a-z0-9.-]+\.mzstatic\.com\//.test(body.art) ? body.art : null;
+        s = { title, artist, yt: await this.ytFind(title, artist), sp: null, thumb: art, q: null };
+        if (!s.thumb && s.yt) s.thumb = `https://i.ytimg.com/vi/${s.yt}/mqdefault.jpg`;
+      } else {
+        s = await resolveSong(body.input, this.lookup);
+        if (!s.yt && (s.q || s.sp)) s.yt = await this.ytFind(s.title, s.artist);
+      }
       // re-check after the await, in case of a double tap
       const again = this.one('SELECT COUNT(*) AS c FROM songs WHERE group_id = ? AND user_id = ?', gid, me.id).c;
       if (again >= g.per) bad('כבר הוספת את כל השירים שלך');

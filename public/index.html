@@ -167,6 +167,28 @@ body.noauth nav.bottom{display:none}
 .big-user .avatar{width:64px;height:64px;font-size:28px}
 .big-user b{font-family:"Rubik";font-size:24px;display:block}
 .big-user small{color:var(--muted);direction:ltr;display:block;text-align:right}
+
+.sugg{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.sugg-msg{display:grid;place-items:center;padding:14px;color:var(--muted)}
+.sitem{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:14px;background:var(--card2);border:1px solid var(--line);text-align:right;width:100%}
+.sitem:active{transform:scale(.99)}
+.sitem img,.sart{width:44px;height:44px;border-radius:10px;object-fit:cover;flex:none;background:#3A3340}
+.stext{flex:1;min-width:0;display:flex;flex-direction:column}
+.stext b{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stext small{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sadd{width:34px;height:34px;border-radius:50%;background:var(--grad);color:#24093D;display:grid;place-items:center;flex:none}
+.sadd svg{width:18px;height:18px}
+.sitem.free{background:transparent;border-style:dashed}
+.sitem.free .sadd{background:var(--card2);color:var(--text)}
+.sitem.free .stext b{white-space:normal}
+.playcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:22px}
+.plat-label{color:var(--muted);font-size:14px;font-weight:600;margin:14px 2px 8px}
+.plats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.plat{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:16px;background:var(--card2);border:1px solid var(--line);font-weight:700;font-size:13px;color:var(--text)}
+.plat svg{width:26px;height:26px}
+.plat:first-child svg{color:#FF4E45}
+.plat:nth-child(2) svg{color:#FF4E45}
+.plat[disabled]{opacity:.5}
 </style>
 </head>
 <body class="noauth">
@@ -201,6 +223,7 @@ const IC = {
   shuffle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',
   yt:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15V9l5.2 3z"/></svg>',
   wa:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3a.5.5 0 0 0 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.7 11.7 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.7-1.2 2.2 2.2 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3z"/></svg>',
+  ytm:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M10.8 10.2v3.6l3-1.8z" fill="currentColor" stroke="none"/></svg>',
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>',
@@ -595,21 +618,56 @@ function renderCompose(mine, per){
   box.innerHTML = `
     <form class="card" id="addForm" autocomplete="off" novalidate>
       <h2>תוסיף שיר</h2>
-      <div class="addrow">
-        <input type="text" id="songInput" placeholder="קישור מיוטיוב / ספוטיפיי או שם של שיר" maxlength="300">
-        <button class="btn" id="addBtn" type="submit" aria-label="הוסף">${IC.plus}</button>
+      <div class="searchbox">
+        <input type="search" id="songInput" placeholder="כתוב שם של שיר או זמר" maxlength="120" enterkeyhint="search">
       </div>
+      <div class="sugg" id="sugg"></div>
       <div class="quota">${pips}<span>${left === 1 ? 'נשאר לך שיר אחד' : 'נשארו לך ' + left + ' שירים'}</span></div>
-      <p class="hint">הכי טוב: פותחים את השיר ביוטיוב, לוחצים "שיתוף", מעתיקים ומדביקים כאן.</p>
     </form>`;
-  $('#addForm').onsubmit = async e => {
-    e.preventDefault();
-    const input = $('#songInput').value.trim(); if(!input) return;
-    const btn = $('#addBtn'); busy(btn, true);
-    try{ await api('POST', `/groups/${G.group.id}/songs`, { input }); $('#songInput').value = ''; $('#songInput').blur(); await refreshGroup(); toast('השיר נוסף'); }
-    catch(err){ toast(err.message); }
-    finally{ if(document.body.contains(btn)) busy(btn, false); }
+  const input = $('#songInput'), sugg = $('#sugg');
+  let t, last = '', results = [];
+  const draw = (state) => {
+    const q = input.value.trim();
+    if(q.length < 2){ sugg.innerHTML = ''; return; }
+    if(state === 'loading' && !results.length){ sugg.innerHTML = `<div class="sugg-msg"><span class="spin-sm"></span></div>`; return; }
+    sugg.innerHTML = results.map((r, i) => `
+      <button type="button" class="sitem" data-i="${i}">
+        ${r.art ? `<img src="${esc(r.art)}" alt="" loading="lazy">` : `<span class="sart"></span>`}
+        <span class="stext"><b>${esc(r.title)}</b><small>${esc(r.artist)}</small></span>
+        <span class="sadd">${IC.plus}</span>
+      </button>`).join('') + `
+      <button type="button" class="sitem free" id="freeAdd"><span class="stext"><b>לא מצאתי, תוסיף "${esc(q)}"</b><small>אפשר לכתוב גם את הזמר, למשל: ${esc(q)} - שם הזמר</small></span><span class="sadd">${IC.plus}</span></button>`;
+    $$('.sitem[data-i]', sugg).forEach(b => b.onclick = () => add(results[+b.dataset.i], b));
+    $('#freeAdd').onclick = e => {
+      const parts = q.split(/\s+-\s+/);
+      add({ title: parts[0].trim(), artist: (parts[1] || '').trim() }, e.currentTarget);
+    };
   };
+  async function search(){
+    const q = input.value.trim();
+    if(q === last) return;
+    last = q;
+    if(q.length < 2){ results = []; draw(); return; }
+    draw('loading');
+    try{
+      const r = await fetch('/api/search?q=' + encodeURIComponent(q)).then(r => r.json());
+      if(q !== input.value.trim()) return;
+      results = r.results || [];
+    }catch(e){ results = []; }
+    draw();
+  }
+  input.oninput = () => { clearTimeout(t); t = setTimeout(search, 280); };
+  async function add(song, btn){
+    btn.disabled = true;
+    const add = $('.sadd', btn); if(add) add.innerHTML = '<span class="spin-sm"></span>';
+    try{
+      const body = /youtu\.?be|open\.spotify\.com/.test(input.value) && !song.art ? { input: input.value.trim() } : { title: song.title, artist: song.artist || '', art: song.art || '' };
+      await api('POST', `/groups/${G.group.id}/songs`, body);
+      input.value = ''; input.blur(); results = []; last = ''; sugg.innerHTML = '';
+      await refreshGroup(); toast('השיר נוסף');
+    }catch(err){ toast(err.message); btn.disabled = false; if(add) add.innerHTML = IC.plus; }
+  }
+  $('#addForm').onsubmit = e => { e.preventDefault(); clearTimeout(t); search(); };
 }
 
 /* ---------- player ---------- */
@@ -619,29 +677,50 @@ function sorted(list){
   return list.slice().sort((a, b) => (pos.has(a.id) ? pos.get(a.id) : 1e9) - (pos.has(b.id) ? pos.get(b.id) : 1e9));
 }
 const playable = () => sorted(G.songs.filter(s => s.yt));
+async function ensureResolved(){
+  if(!G.songs.some(s => !s.yt)) return;
+  try{ await api('POST', `/groups/${G.group.id}/resolve`); await refreshGroup(); }catch(e){}
+}
 function renderPlay(){
   const box = $('#gPlay');
   if(!G.songs.length){ box.innerHTML = ''; return; }
-  if(!$('#playBtns', box)) box.innerHTML = `<div id="playerSlot"></div><div class="actions" id="playBtns"></div>`;
-  const list = playable(), ids = list.map(s => s.yt);
-  $('#playBtns').innerHTML = ids.length ? `
-      <button class="btn dark wide" id="playHere">${playing ? IC.stop + 'עצור' : IC.play + 'נגן כאן את כל הפלייליסט'}</button>
-      <a class="btn" href="https://www.youtube.com/watch_videos?video_ids=${ids.slice(0, 50).join(',')}" target="_blank" rel="noopener">${IC.yt}פתח ביוטיוב</a>
-      <button class="btn alt" id="shuffleBtn">${IC.shuffle}ערבב</button>`
-    : `<p class="note wide">כדי לנגן, צריך לפחות שיר אחד עם קישור מיוטיוב.</p>`;
-  if(!ids.length) return;
-  $('#playHere').onclick = () => playing ? stopPlayer() : startPlayer();
+  if(!$('#playBtns', box)) box.innerHTML = `<div id="playerSlot"></div><div class="playcard" id="playBtns"></div>`;
+  const ids = playable().map(s => s.yt);
+  $('#playBtns').innerHTML = `
+      <button class="btn full" id="playHere">${playing ? IC.stop + 'עצור' : IC.play + 'נגן כאן את כל הפלייליסט'}</button>
+      <div class="plat-label">או לפתוח ב:</div>
+      <div class="plats">
+        <button class="plat" id="openYT">${IC.yt}<span>YouTube</span></button>
+        <button class="plat" id="openYTM">${IC.ytm}<span>YouTube Music</span></button>
+        <button class="plat" id="shuffleBtn">${IC.shuffle}<span>ערבב</span></button>
+      </div>`;
+  $('#playHere').onclick = e => playing ? stopPlayer() : act(e.currentTarget, async () => { await ensureResolved(); startPlayer(); });
+  $('#openYT').onclick = e => openExternal(e.currentTarget, 'yt');
+  $('#openYTM').onclick = e => openExternal(e.currentTarget, 'ytm');
   $('#shuffleBtn').onclick = () => {
-    const arr = list.map(s => s.id);
+    const arr = G.songs.map(s => s.id);
     for(let i = arr.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
     order = arr; renderTracks(); renderPlay();
     if(playing) startPlayer();
     toast('הסדר עורבב');
   };
 }
+async function openExternal(btn, where){
+  const w = window.open('', '_blank');   // open right away so phones don't block it
+  await act(btn, ensureResolved);
+  const ids = playable().map(s => s.yt).slice(0, 50);
+  if(!ids.length){ if(w) w.close(); toast('לא מצאנו את השירים ביוטיוב'); return; }
+  let url = 'https://www.youtube.com/watch_videos?video_ids=' + ids.join(',');
+  if(where === 'ytm'){
+    let list = null;
+    try{ list = (await fetch('/api/ytlist?ids=' + ids.join(',')).then(r => r.json())).list; }catch(e){}
+    url = 'https://music.youtube.com/watch?v=' + ids[0] + (list ? '&list=' + encodeURIComponent(list) : '');
+  }
+  if(w) w.location = url; else location.href = url;
+}
 function startPlayer(){
   const ids = playable().map(s => s.yt);
-  if(!ids.length) return;
+  if(!ids.length){ toast('לא מצאנו את השירים ביוטיוב'); return; }
   const src = `https://www.youtube-nocookie.com/embed/${ids[0]}?autoplay=1&rel=0&playsinline=1` + (ids.length > 1 ? `&playlist=${ids.slice(1).join(',')}` : '');
   $('#playerSlot').innerHTML = `<div class="player"><iframe src="${src}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="נגן"></iframe></div>`;
   playing = true; document.body.classList.add('playing');
@@ -669,43 +748,22 @@ function renderTracks(){
     <ol class="tracks">${songs.map((s, i) => {
       const m = byId[s.user_id] || { display:'מישהו שיצא', color:'#bbb' };
       const canDel = s.user_id === ME.id || isOwner;
-      const thumb = s.thumb ? `<img class="thumb" src="${esc(s.thumb)}" alt="" loading="lazy">` : `<span class="thumb">${IC.note}</span>`;
-      let links = '';
-      if(s.yt) links += `<a href="https://www.youtube.com/watch?v=${esc(s.yt)}" target="_blank" rel="noopener">יוטיוב</a>`;
-      if(s.sp) links += `<a href="${esc(s.sp)}" target="_blank" rel="noopener">ספוטיפיי</a>`;
-      if(!s.yt){
-        links += `<a href="${ytSearch(s.title + (s.artist ? ' ' + s.artist : ''))}" target="_blank" rel="noopener">חפש ביוטיוב</a>`;
-        if(!s.sp) links += `<a href="${spSearch(s.title)}" target="_blank" rel="noopener">חפש בספוטיפיי</a>`;
-        if(s.user_id === ME.id) links += `<button type="button" data-fix="${esc(s.id)}">הדבק קישור יוטיוב</button>`;
-      }
+      const thumb = s.thumb ? `<img class="thumb" src="${esc(s.thumb)}" alt="" loading="lazy">` : `<span class="thumb"></span>`;
       return `<li class="track">
         <span class="num">${String(i + 1).padStart(2, '0')}</span>
         ${thumb}
         <div class="tinfo">
           <div class="ttitle">${esc(s.title)}</div>
-          <div class="tsub">${s.artist ? `<span>${esc(s.artist)}</span><span>·</span>` : ''}<span class="dot" style="background:${esc(m.color)}"></span><span>${esc(m.display)}</span>${!s.yt ? `<span class="tag">${s.sp ? 'רק בספוטיפיי' : 'בלי קישור'}</span>` : ''}</div>
-          <div class="tlinks">${links}</div>
-          <div class="fixslot"></div>
+          <div class="tsub">${s.artist ? `<span>${esc(s.artist)}</span><span>·</span>` : ''}<span class="dot" style="background:${esc(m.color)}"></span><span>${esc(m.display)}</span>${!s.yt ? `<span class="tag">לא נמצא ביוטיוב</span>` : ''}</div>
         </div>
         ${canDel ? `<button class="del" data-del="${esc(s.id)}" aria-label="מחק">${IC.x}</button>` : ''}
       </li>`;
-    }).join('')}</ol>
-    ${songs.some(s => !s.yt) ? `<p class="hint after">שירים בלי קישור מיוטיוב לא נכנסים לנגן. מי שהוסיף אותם יכול ללחוץ "חפש ביוטיוב", להעתיק את הקישור ולהדביק.</p>` : ''}`;
+    }).join('')}</ol>`;
   $$('[data-del]', box).forEach(b => b.onclick = () => act(b, async () => {
     await api('DELETE', `/groups/${G.group.id}/songs/${b.dataset.del}`);
     if(order) order = order.filter(x => x !== b.dataset.del);
     await refreshGroup(); toast('השיר נמחק');
   }));
-  $$('[data-fix]', box).forEach(b => b.onclick = () => {
-    const slot = $('.fixslot', b.closest('.track'));
-    if(slot.innerHTML){ slot.innerHTML = ''; return; }
-    slot.innerHTML = `<form class="fix"><input type="text" placeholder="הדבק כאן קישור מיוטיוב"><button class="btn" type="submit">שמור</button></form>`;
-    const f = $('form', slot), inp = $('input', slot); inp.focus();
-    f.onsubmit = e => { e.preventDefault(); act($('button', f), async () => {
-      await api('PATCH', `/groups/${G.group.id}/songs/${b.dataset.fix}`, { input: inp.value.trim() });
-      inp.blur(); await refreshGroup(); toast('הקישור נשמר');
-    }); };
-  });
 }
 
 route();
