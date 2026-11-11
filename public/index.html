@@ -189,6 +189,12 @@ body.noauth nav.bottom{display:none}
 .plat:first-child svg{color:#FF4E45}
 .plat:nth-child(2) svg{color:#FF4E45}
 .plat[disabled]{opacity:.5}
+
+.track.can{cursor:pointer}
+.track.now{background:linear-gradient(90deg,rgba(255,122,89,0),rgba(255,122,89,.16))}
+.track.now .ttitle{color:#FFB79F}
+.track.now .num{color:transparent;background:radial-gradient(circle,var(--accent) 0 30%,transparent 32%)}
+.player #ytp,.player iframe{width:100%;height:100%;border:0;display:block}
 </style>
 </head>
 <body class="noauth">
@@ -728,17 +734,51 @@ async function openExternal(btn){
   const url = 'https://www.youtube.com/watch_videos?video_ids=' + ids.join(',');
   if(w) w.location = url; else location.href = url;
 }
-function startPlayer(){
-  const ids = playable().map(s => s.yt);
+let YTP = null, nowId = null, ytApi = null;
+function loadYTApi(){
+  if(ytApi) return ytApi;
+  ytApi = new Promise(res => {
+    if(window.YT && window.YT.Player) return res();
+    window.onYouTubeIframeAPIReady = () => res();
+    const sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(sc);
+  });
+  return ytApi;
+}
+function markNow(){
+  $$('.track').forEach(li => li.classList.toggle('now', !!nowId && li.dataset.id === nowId));
+}
+async function startPlayer(fromId){
+  const list = playable(), ids = list.map(s => s.yt);
   if(!ids.length){ toast('לא מצאנו את השירים ביוטיוב'); return; }
-  const src = `https://www.youtube-nocookie.com/embed/${ids[0]}?autoplay=1&rel=0&playsinline=1` + (ids.length > 1 ? `&playlist=${ids.slice(1).join(',')}` : '');
-  $('#playerSlot').innerHTML = `<div class="player"><iframe src="${src}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="נגן"></iframe></div>`;
+  const start = Math.max(0, fromId ? list.findIndex(s => s.id === fromId) : 0);
   playing = true; document.body.classList.add('playing');
   renderPlay();
+  if(YTP && YTP.loadPlaylist && $('#ytp')){
+    YTP.loadPlaylist(ids, start);
+  } else {
+    $('#playerSlot').innerHTML = `<div class="player"><div id="ytp"></div></div>`;
+    await loadYTApi();
+    YTP = new YT.Player('ytp', {
+      host: 'https://www.youtube-nocookie.com',
+      width: '100%', height: '100%',
+      playerVars: { playsinline: 1, rel: 0, autoplay: 1 },
+      events: {
+        onReady: e => e.target.loadPlaylist(ids, start),
+        onStateChange: e => {
+          const pl = e.target.getPlaylist ? e.target.getPlaylist() : null;
+          const i = e.target.getPlaylistIndex ? e.target.getPlaylistIndex() : -1;
+          if(pl && i >= 0){ const song = playable().find(s => s.yt === pl[i]); nowId = song ? song.id : null; markNow(); }
+        },
+        onError: e => { try{ e.target.nextVideo(); }catch(x){} }
+      }
+    });
+  }
   $('#playerSlot').scrollIntoView({ behavior:'smooth', block:'center' });
 }
 function stopPlayer(silent){
   playing = false; document.body.classList.remove('playing');
+  try{ if(YTP && YTP.destroy) YTP.destroy(); }catch(e){}
+  YTP = null; nowId = null; markNow();
   const slot = $('#playerSlot'); if(slot) slot.innerHTML = '';
   if(!silent && G) renderPlay();
 }
@@ -754,12 +794,12 @@ function renderTracks(){
   }
   const isOwner = G.group.owner === ME.id;
   box.innerHTML = `
-    <div class="sec"><h2>הפלייליסט</h2><small>${plural(songs.length, 'שיר אחד', 'שירים')}</small></div>
+    <div class="sec"><h2>הפלייליסט</h2><small>לחיצה על שיר מנגנת ממנו</small></div>
     <ol class="tracks">${songs.map((s, i) => {
       const m = byId[s.user_id] || { display:'מישהו שיצא', color:'#bbb' };
       const canDel = s.user_id === ME.id || isOwner;
       const thumb = s.thumb ? `<img class="thumb" src="${esc(s.thumb)}" alt="" loading="lazy">` : `<span class="thumb"></span>`;
-      return `<li class="track">
+      return `<li class="track${s.yt ? ' can' : ''}${s.id === nowId ? ' now' : ''}" data-id="${esc(s.id)}">
         <span class="num">${String(i + 1).padStart(2, '0')}</span>
         ${thumb}
         <div class="tinfo">
@@ -769,6 +809,10 @@ function renderTracks(){
         ${canDel ? `<button class="del" data-del="${esc(s.id)}" aria-label="מחק">${IC.x}</button>` : ''}
       </li>`;
     }).join('')}</ol>`;
+  $$('.track.can', box).forEach(li => li.onclick = e => {
+    if(e.target.closest('.del')) return;
+    startPlayer(li.dataset.id).catch(err => toast(err.message));
+  });
   $$('[data-del]', box).forEach(b => b.onclick = () => act(b, async () => {
     await api('DELETE', `/groups/${G.group.id}/songs/${b.dataset.del}`);
     if(order) order = order.filter(x => x !== b.dataset.del);
