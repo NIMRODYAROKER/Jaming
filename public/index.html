@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jaming · פלייליסט משותף</title>
+<meta name="description" content="כל אחד מהחברים שם שיר, ויוצא פלייליסט משותף.">
+<meta name="theme-color" content="#F3EEE4">
+<link rel="icon" type="image/png" href="/icon.png">
+<link rel="apple-touch-icon" href="/icon.png">
+<meta name="apple-mobile-web-app-title" content="Jaming">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Jaming">
+<meta property="og:url" content="https://jaming.SUBDOMAIN.workers.dev/">
+<meta property="og:title" content="Jaming · פלייליסט משותף">
+<meta property="og:description" content="כל אחד שם שיר. יוצא פלייליסט.">
+<meta property="og:image" content="https://jaming.SUBDOMAIN.workers.dev/og.jpg">
+<meta property="og:image:secure_url" content="https://jaming.SUBDOMAIN.workers.dev/og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="he_IL">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Jaming · פלייליסט משותף">
+<meta name="twitter:description" content="כל אחד שם שיר. יוצא פלייליסט.">
+<meta name="twitter:image" content="https://jaming.SUBDOMAIN.workers.dev/og.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800;900&family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3EEE4; --paper:#FFFCF6; --ink:#1B1A17; --muted:#6E685E; --soft:#E9E2D4;
+  --accent:#FF5A1F; --r:14px; --sh:4px 4px 0 var(--ink);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:"Assistant",system-ui,sans-serif;font-size:17px;line-height:1.45;min-height:100vh;
+  background-image:linear-gradient(var(--soft) 1px,transparent 1px);background-size:100% 34px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+a{color:inherit}
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px calc(110px + env(safe-area-inset-bottom))}
+body.noauth .wrap{padding-bottom:40px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0 18px}
+.brand{display:flex;align-items:center;gap:10px;font-family:"Rubik";font-weight:900;font-size:22px;letter-spacing:.5px;text-decoration:none;direction:ltr}
+.tape{width:44px;height:30px;flex:none}
+.tape .reel{transform-box:fill-box;transform-origin:center}
+body.playing .tape .reel{animation:spin 1.6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.iconbtn{width:42px;height:42px;border:2px solid var(--ink);border-radius:12px;background:var(--paper);display:grid;place-items:center;box-shadow:2px 2px 0 var(--ink);text-decoration:none}
+.iconbtn svg{width:20px;height:20px}
+h1{font-family:"Rubik";font-weight:900;font-size:clamp(34px,10vw,48px);line-height:1.02;letter-spacing:-.5px}
+h1 mark{background:none;color:var(--ink);position:relative;white-space:nowrap;z-index:0;isolation:isolate}
+h1 mark::after{content:"";position:absolute;inset:auto -4px 2px -4px;height:.32em;background:var(--accent);z-index:-1;border-radius:3px}
+.lead{color:var(--muted);font-size:18px;margin:12px 0 22px;max-width:30ch}
+h2{font-family:"Rubik";font-weight:800;font-size:20px;margin-bottom:12px}
+h3{font-family:"Rubik";font-weight:800;font-size:17px;margin:22px 0 10px}
+.card{background:var(--paper);border:2px solid var(--ink);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:22px}
+label{display:block;font-weight:700;font-size:15px;margin:0 0 6px}
+.field{margin-bottom:14px}
+.field small{display:block;color:var(--muted);font-size:13px;margin-top:4px}
+input[type=text],input[type=password],input[type=search]{width:100%;height:50px;border:2px solid var(--ink);border-radius:12px;background:#fff;padding:0 14px;font-size:17px;outline:none;-webkit-appearance:none}
+input:focus{box-shadow:0 0 0 3px rgba(255,90,31,.35)}
+input::placeholder{color:#A39C90}
+input.ltr{direction:ltr;text-align:right}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;height:44px;border:2px solid var(--ink);border-radius:10px;background:#fff;font-family:"Rubik";font-weight:700}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.tabs{display:flex;border:2px solid var(--ink);border-radius:12px;overflow:hidden;margin-bottom:18px}
+.tabs button{flex:1;height:44px;font-family:"Rubik";font-weight:700;background:#fff}
+.tabs button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 20px;border:2px solid var(--ink);border-radius:12px;background:var(--accent);color:var(--ink);
+  font-family:"Rubik";font-weight:800;font-size:17px;box-shadow:3px 3px 0 var(--ink);transition:transform .06s,box-shadow .06s;text-decoration:none;white-space:nowrap}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn.full{width:100%}
+.btn.alt{background:var(--paper)}
+.btn.dark{background:var(--ink);color:var(--paper)}
+.btn.sm{height:40px;font-size:15px;padding:0 14px;box-shadow:2px 2px 0 var(--ink)}
+.btn.xs{height:34px;font-size:14px;padding:0 12px;box-shadow:2px 2px 0 var(--ink);border-radius:10px}
+.btn[disabled]{opacity:.55;pointer-events:none}
+.btn svg{width:18px;height:18px;flex:none}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.err{color:#C4252D;font-weight:700;font-size:15px;margin:-4px 0 12px;min-height:0}
+.list{display:flex;flex-direction:column;gap:10px}
+.item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--paper);border:2px solid var(--ink);border-radius:12px;box-shadow:2px 2px 0 var(--ink);text-decoration:none}
+.item .grow{flex:1;min-width:0}
+.item b{font-family:"Rubik";font-weight:700;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item small{color:var(--muted);display:block;font-size:14px}
+.item .acts{display:flex;gap:6px;flex:none}
+.item.invite{background:#FFF1E8}
+.avatar{width:40px;height:40px;border-radius:50%;border:2px solid var(--ink);display:grid;place-items:center;font-family:"Rubik";font-weight:800;color:#fff;flex:none;font-size:17px}
+.gicon{width:44px;height:44px;border-radius:10px;border:2px solid var(--ink);background:var(--accent);display:grid;place-items:center;flex:none}
+.gicon svg{width:22px;height:22px}
+.badge{min-width:20px;height:20px;border-radius:10px;background:var(--accent);color:var(--ink);font-size:12px;font-weight:800;display:inline-grid;place-items:center;padding:0 5px;border:1.5px solid var(--ink)}
+.gtitle{font-family:"Rubik";font-weight:900;font-size:clamp(28px,8vw,38px);line-height:1.05;word-break:break-word}
+.meta{color:var(--muted);margin:6px 0 14px;font-weight:600}
+.members{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:5px 12px 5px 10px;border:2px solid var(--ink);border-radius:99px;background:var(--paper);font-weight:700;font-size:15px}
+.chip.me{background:var(--ink);color:var(--paper)}
+.chip.me .dot{border-color:var(--paper)}
+.chip.pending{border-style:dashed;opacity:.65}
+.dot{width:11px;height:11px;border-radius:50%;flex:none;border:1.5px solid var(--ink)}
+.hint{color:var(--muted);font-size:15px;margin-top:10px}
+.addrow{display:flex;gap:8px}
+.addrow input{flex:1;min-width:0}
+.addrow .btn{flex:none;width:56px;padding:0}
+.quota{display:flex;gap:6px;margin-top:12px;align-items:center;color:var(--muted);font-size:15px;font-weight:600}
+.pip{width:22px;height:8px;border-radius:4px;border:1.5px solid var(--ink)}
+.pip.on{background:var(--accent)}
+.player{border:2px solid var(--ink);border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;margin-bottom:14px}
+.player iframe{width:100%;height:100%;border:0;display:block}
+.tracks{list-style:none;border:2px solid var(--ink);border-radius:var(--r);background:var(--paper);box-shadow:var(--sh);overflow:hidden}
+.track{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1.5px dashed #CFC6B5}
+.track:last-child{border-bottom:0}
+.num{font-family:"Rubik";font-weight:800;font-size:15px;color:var(--muted);width:24px;text-align:center;flex:none;font-variant-numeric:tabular-nums}
+.thumb{width:52px;height:52px;border-radius:8px;border:1.5px solid var(--ink);object-fit:cover;flex:none;background:var(--soft);display:grid;place-items:center}
+.thumb svg{width:22px;height:22px;opacity:.5}
+.tinfo{flex:1;min-width:0}
+.ttitle{font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tsub{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:14px;margin-top:3px;flex-wrap:wrap}
+.tag{font-size:12px;font-weight:700;border:1.5px solid var(--ink);border-radius:6px;padding:0 6px;color:var(--ink)}
+.tlinks{display:flex;gap:12px;margin-top:6px;flex-wrap:wrap}
+.tlinks a,.tlinks button{font-size:14px;font-weight:700;text-decoration:underline;text-underline-offset:3px;color:var(--ink)}
+.del{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:none;color:var(--muted)}
+.del svg{width:18px;height:18px}
+.fix{display:flex;gap:6px;margin-top:8px}
+.fix input{height:40px!important;font-size:15px!important}
+.fix .btn{height:40px;font-size:14px;padding:0 12px;box-shadow:2px 2px 0 var(--ink)}
+.empty{text-align:center;padding:26px 18px;color:var(--muted)}
+.empty b{display:block;font-family:"Rubik";color:var(--ink);font-size:19px;margin-bottom:4px}
+.state{text-align:center;padding:60px 10px}
+.state p{color:var(--muted);margin:8px 0 20px}
+.spinner{width:34px;height:34px;border:3px solid var(--soft);border-top-color:var(--ink);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
+.spin-sm{width:20px;height:20px;border:2.5px solid rgba(0,0,0,.15);border-top-color:currentColor;border-radius:50%;animation:spin .8s linear infinite}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--ink);color:var(--paper);padding:12px 18px;border-radius:12px;font-weight:700;opacity:0;transition:.25s;pointer-events:none;max-width:calc(100vw - 32px);text-align:center;z-index:20}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.sec{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.sec h2{margin:0}
+.sec small{color:var(--muted);font-weight:600}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.actions .wide{grid-column:1/-1}
+.note{font-size:14px;color:var(--muted)}
+.pick{display:flex;flex-direction:column;gap:8px;max-height:320px;overflow:auto;margin-bottom:14px}
+.pick label{display:flex;align-items:center;gap:10px;margin:0;padding:8px 10px;border:2px solid var(--ink);border-radius:12px;background:#fff;cursor:pointer;font-weight:700}
+.pick input{width:20px;height:20px;accent-color:var(--ink);flex:none}
+.pick .avatar{width:32px;height:32px;font-size:14px}
+.pick label:has(input:checked){background:#FFF1E8}
+.banner{background:#FFF1E8;border:2px solid var(--ink);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:22px}
+.banner p{margin:0 0 14px;font-weight:600}
+.linkbtn{font-weight:700;text-decoration:underline;text-underline-offset:3px;color:var(--muted);font-size:15px}
+.center{text-align:center;margin-top:24px}
+nav.bottom{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:2px solid var(--ink);padding:8px 12px calc(8px + env(safe-area-inset-bottom));z-index:10}
+nav.bottom .in{max-width:560px;margin:0 auto;display:flex;gap:8px}
+nav.bottom a{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-radius:12px;text-decoration:none;font-weight:700;font-size:13px;color:var(--muted);position:relative}
+nav.bottom a svg{width:24px;height:24px}
+nav.bottom a[aria-current=page]{color:var(--ink);background:var(--soft)}
+nav.bottom .badge{position:absolute;top:2px;left:calc(50% - 22px)}
+body.noauth nav.bottom{display:none}
+.big-user{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.big-user .avatar{width:64px;height:64px;font-size:28px}
+.big-user b{font-family:"Rubik";font-size:24px;display:block}
+.big-user small{color:var(--muted);direction:ltr;display:block;text-align:right}
+</style>
+</head>
+<body class="noauth">
+<div class="wrap">
+  <div class="top">
+    <a class="brand" href="#/" aria-label="Jaming">
+      <svg class="tape" viewBox="0 0 44 30" fill="none" stroke="#1B1A17" stroke-width="2.2">
+        <rect x="1.5" y="1.5" width="41" height="27" rx="4" fill="#FF5A1F"/>
+        <rect x="8" y="7" width="28" height="11" rx="5.5" fill="#FFFCF6"/>
+        <g class="reel"><circle cx="14" cy="12.5" r="3.2" fill="#FFFCF6"/><path d="M14 9.3v6.4M10.8 12.5h6.4" stroke-width="1.4"/></g>
+        <g class="reel"><circle cx="30" cy="12.5" r="3.2" fill="#FFFCF6"/><path d="M30 9.3v6.4M26.8 12.5h6.4" stroke-width="1.4"/></g>
+        <path d="M11 28.5l3-5h16l3 5" fill="#FFFCF6"/>
+      </svg>
+      <span>Jaming</span>
+    </a>
+    <span id="topAction"></span>
+  </div>
+  <main id="app"></main>
+</div>
+<nav class="bottom"><div class="in" id="nav"></div></nav>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+const app = $('#app');
+
+const IC = {
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>',
+  stop:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
+  shuffle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',
+  yt:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8zM10 15V9l5.2 3z"/></svg>',
+  wa:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3a.5.5 0 0 0 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.7 11.7 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.7-1.2 2.2 2.2 0 0 0 .2-1.2c-.1-.1-.3-.2-.5-.3z"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>',
+  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M15 6l-6 6 6 6"/></svg>',
+  groups:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2"/><circle cx="15.5" cy="11" r="2"/><path d="M7 19l2-3h6l2 3"/></svg>',
+  friends:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></svg>',
+  me:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+  addUser:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/></svg>'
+};
+
+/* ---------- local ---------- */
+const ls = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+let token = ls.get('mx_token', null);
+let ME = ls.get('mx_me', null);
+let HOME = null;
+
+/* ---------- api ---------- */
+async function api(method, path, body){
+  let r;
+  try{
+    r = await fetch('/api' + path, { method, headers:{ 'content-type':'application/json', ...(token ? { authorization:'Bearer ' + token } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  }catch(e){ throw new Error('אין חיבור לאינטרנט. נסה שוב'); }
+  let j = {}; try{ j = await r.json(); }catch(e){}
+  if(r.status === 401 && token){ logoutLocal(); throw new Error('צריך להתחבר מחדש'); }
+  if(!r.ok) throw new Error(j.error || 'משהו נכשל. נסה שוב');
+  return j;
+}
+function logoutLocal(){
+  token = null; ME = null; HOME = null;
+  ls.del('mx_token'); ls.del('mx_me');
+  location.hash = '#/';
+  route();
+}
+
+/* ---------- helpers ---------- */
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let toastT;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800); }
+function busy(btn, on){
+  if(!btn) return;
+  if(on){ btn.dataset.html = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spin-sm"></span>'; }
+  else { btn.disabled = false; if(btn.dataset.html) btn.innerHTML = btn.dataset.html; }
+}
+async function act(btn, fn){
+  busy(btn, true);
+  try{ await fn(); }catch(e){ toast(e.message); }
+  finally{ if(document.body.contains(btn)) busy(btn, false); }
+}
+const avatar = u => `<span class="avatar" style="background:${esc(u.color)}">${esc((u.display || '?').trim().charAt(0))}</span>`;
+const plural = (n, one, many) => n === 1 ? one : n + ' ' + many;
+const ytSearch = q => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
+const spSearch = q => 'https://open.spotify.com/search/' + encodeURIComponent(q);
+const siteUrl = () => location.origin + '/';
+async function shareText(text, url){
+  if(navigator.share){
+    try{ await navigator.share({ title:'Jaming', text, url }); return; }catch(e){ if(e && e.name === 'AbortError') return; }
+  }
+  window.open('https://wa.me/?text=' + encodeURIComponent(text + '\n' + url), '_blank');
+}
+
+/* ---------- polling ---------- */
+let pollT = null;
+function startPoll(fn, ms = 6000){
+  clearInterval(pollT);
+  pollT = setInterval(() => {
+    if(document.visibilityState !== 'visible') return;
+    const a = document.activeElement;
+    if(a && a.tagName === 'INPUT') return;
+    fn();
+  }, ms);
+}
+
+/* ---------- nav ---------- */
+function renderNav(current){
+  const reqs = HOME ? HOME.incoming.length : 0;
+  const inv = HOME ? HOME.invites.length : 0;
+  $('#nav').innerHTML = `
+    <a href="#/" ${current === 'groups' ? 'aria-current="page"' : ''}>${IC.groups}קבוצות${inv ? `<span class="badge">${inv}</span>` : ''}</a>
+    <a href="#/friends" ${current === 'friends' ? 'aria-current="page"' : ''}>${IC.friends}חברים${reqs ? `<span class="badge">${reqs}</span>` : ''}</a>
+    <a href="#/me" ${current === 'me' ? 'aria-current="page"' : ''}>${IC.me}אני</a>`;
+}
+async function loadHome(){
+  HOME = await api('GET', '/home');
+  ME = HOME.me; ls.set('mx_me', ME);
+  return HOME;
+}
+
+/* ---------- routing ---------- */
+let navCurrent = 'groups';
+function route(){
+  clearInterval(pollT); pollT = null;
+  stopPlayer(true);
+  window.scrollTo(0, 0);
+  const h = location.hash || '#/';
+  const add = h.match(/^#\/add\/([A-Za-z0-9_.]+)/);
+  if(add) ls.set('mx_pending_add', add[1]);
+  if(!token){
+    document.body.classList.add('noauth');
+    $('#topAction').innerHTML = '';
+    return renderAuth();
+  }
+  document.body.classList.remove('noauth');
+  $('#topAction').innerHTML = '';
+  let m;
+  if(add || h.startsWith('#/friends')){ navCurrent = 'friends'; renderNav('friends'); return renderFriends(); }
+  if(h.startsWith('#/me')){ navCurrent = 'me'; renderNav('me'); return renderMe(); }
+  if(h.startsWith('#/new')){ navCurrent = 'groups'; renderNav('groups'); return renderNew(); }
+  if((m = h.match(/^#\/g\/([A-Za-z0-9_-]+)/))){ navCurrent = 'groups'; renderNav('groups'); return openGroup(m[1]); }
+  navCurrent = 'groups'; renderNav('groups'); renderGroups();
+}
+window.addEventListener('hashchange', route);
+
+/* ---------- auth ---------- */
+function renderAuth(){
+  let mode = ls.get('mx_seen', false) ? 'login' : 'signup';
+  const draw = () => {
+    app.innerHTML = `
+      <h1>כל אחד שם שיר.<br>יוצא <mark>פלייליסט.</mark></h1>
+      <p class="lead">פותחים קבוצה, מזמינים חברים, כל אחד מוסיף את השיר שלו ומנגנים הכל ביחד.</p>
+      <form class="card" id="authForm" autocomplete="on">
+        <div class="tabs"><button type="button" data-m="signup" aria-pressed="${mode === 'signup'}">הרשמה</button><button type="button" data-m="login" aria-pressed="${mode === 'login'}">כניסה</button></div>
+        ${mode === 'signup' ? `<div class="field"><label for="fDisplay">השם שלך</label><input type="text" id="fDisplay" maxlength="24" placeholder="איך החברים קוראים לך" autocomplete="nickname"></div>` : ''}
+        <div class="field"><label for="fUser">שם משתמש</label><input type="text" class="ltr" id="fUser" maxlength="20" placeholder="${mode === 'signup' ? 'באנגלית, למשל nimrod' : 'שם המשתמש שלך'}" autocomplete="username" autocapitalize="off" spellcheck="false">
+          ${mode === 'signup' ? '<small>ככה החברים ימצאו אותך. אותיות באנגלית ומספרים.</small>' : ''}</div>
+        <div class="field"><label for="fPass">סיסמה</label><input type="password" class="ltr" id="fPass" placeholder="${mode === 'signup' ? 'לפחות 6 תווים' : ''}" autocomplete="${mode === 'signup' ? 'new-password' : 'current-password'}"></div>
+        <div class="err" id="fErr"></div>
+        <button class="btn full" id="fBtn" type="submit">${mode === 'signup' ? 'יצירת משתמש' : 'כניסה'}</button>
+      </form>`;
+    $$('.tabs button').forEach(b => b.onclick = () => { mode = b.dataset.m; draw(); });
+    $('#authForm').onsubmit = async e => {
+      e.preventDefault();
+      const btn = $('#fBtn'); $('#fErr').textContent = '';
+      const body = { username: $('#fUser').value.trim(), password: $('#fPass').value };
+      if(mode === 'signup') body.display = $('#fDisplay').value.trim();
+      busy(btn, true);
+      try{
+        const r = await api('POST', mode === 'signup' ? '/signup' : '/login', body);
+        token = r.token; ME = r.me; ls.set('mx_token', token); ls.set('mx_me', ME); ls.set('mx_seen', true);
+        if(ls.get('mx_pending_add', null)) location.hash = '#/add/' + ls.get('mx_pending_add');
+        route();
+      }catch(err){ busy(btn, false); $('#fErr').textContent = err.message; }
+    };
+  };
+  draw();
+}
+
+/* ---------- groups list ---------- */
+async function renderGroups(){
+  if(!HOME) app.innerHTML = `<div class="state"><div class="spinner"></div></div>`;
+  const draw = () => {
+    const H = HOME;
+    app.innerHTML = `
+      <div class="sec"><h2>הקבוצות שלי</h2></div>
+      ${H.invites.length ? `<div class="list" style="margin-bottom:18px">${H.invites.map(g => `
+        <div class="item invite">
+          <span class="gicon">${IC.groups}</span>
+          <div class="grow"><b>${esc(g.name)}</b><small>${g.by ? esc(g.by.display) + ' הזמין אותך' : 'הוזמנת'}</small></div>
+          <div class="acts"><button class="btn xs" data-acc="${esc(g.id)}">הצטרף</button><button class="btn xs alt" data-dec="${esc(g.id)}" aria-label="דחה">${IC.x}</button></div>
+        </div>`).join('')}</div>` : ''}
+      <a class="btn full" href="#/new" style="margin-bottom:18px">${IC.plus}קבוצה חדשה</a>
+      ${H.groups.length ? `<div class="list">${H.groups.map(g => `
+        <a class="item" href="#/g/${esc(g.id)}">
+          <span class="gicon">${IC.note}</span>
+          <div class="grow"><b>${esc(g.name)}</b><small>${plural(g.songs, 'שיר אחד', 'שירים')} · ${plural(g.people, 'חבר אחד', 'חברים')}</small></div>
+          ${IC.arrow}
+        </a>`).join('')}</div>`
+      : `<div class="card empty"><b>עוד אין לך קבוצות</b>${H.friends.length ? 'פתח קבוצה והזמן את החברים שלך.' : 'קודם תוסיף חברים בלשונית "חברים", ואז תפתח קבוצה.'}</div>`}
+    `;
+    $$('[data-acc]').forEach(b => b.onclick = () => act(b, async () => { await api('POST', `/groups/${b.dataset.acc}/accept`); location.hash = '#/g/' + b.dataset.acc; }));
+    $$('[data-dec]').forEach(b => b.onclick = () => act(b, async () => { await api('POST', `/groups/${b.dataset.dec}/decline`); await loadHome(); renderNav('groups'); draw(); }));
+  };
+  if(HOME) draw();
+  try{ await loadHome(); renderNav('groups'); draw(); }
+  catch(e){ if(!HOME) app.innerHTML = `<div class="state"><h2>לא הצלחנו לטעון</h2><p>${esc(e.message)}</p><button class="btn" onclick="location.reload()">נסה שוב</button></div>`; return; }
+  startPoll(async () => { const before = JSON.stringify(HOME); try{ await loadHome(); }catch(e){ return; } if(JSON.stringify(HOME) !== before){ renderNav('groups'); draw(); } });
+}
+
+/* ---------- new group ---------- */
+async function renderNew(){
+  $('#topAction').innerHTML = `<a class="iconbtn" href="#/" aria-label="חזרה">${IC.back}</a>`;
+  if(!HOME){ app.innerHTML = `<div class="state"><div class="spinner"></div></div>`; try{ await loadHome(); }catch(e){ toast(e.message); return; } }
+  let per = 1;
+  const friends = HOME.friends;
+  app.innerHTML = `
+    <form class="card" id="newForm" autocomplete="off">
+      <h2>קבוצה חדשה</h2>
+      <div class="field"><label for="gName">שם הקבוצה</label><input type="text" id="gName" maxlength="40" placeholder="למשל: נסיעה לצפון"></div>
+      <div class="field"><label>כמה שירים כל אחד מוסיף?</label>
+        <div class="seg" id="perSeg">${[1,2,3,5].map(n => `<button type="button" data-n="${n}" aria-pressed="${n === per}">${n}</button>`).join('')}</div></div>
+      <label>את מי להזמין?</label>
+      ${friends.length ? `<div class="pick">${friends.map(f => `<label>${avatar(f)}<span style="flex:1">${esc(f.display)}</span><input type="checkbox" value="${f.id}"></label>`).join('')}</div>`
+        : `<p class="hint" style="margin:0 0 14px">עוד אין לך חברים. אפשר לפתוח קבוצה עכשיו ולהזמין אחר כך, או <a href="#/friends">להוסיף חברים קודם</a>.</p>`}
+      <div class="err" id="nErr"></div>
+      <button class="btn full" id="nBtn" type="submit">פתח קבוצה ושלח הזמנות</button>
+    </form>`;
+  $('#perSeg').onclick = e => { const b = e.target.closest('button'); if(!b) return; per = +b.dataset.n; $$('#perSeg button').forEach(x => x.setAttribute('aria-pressed', x === b)); };
+  $('#newForm').onsubmit = async e => {
+    e.preventDefault();
+    const name = $('#gName').value.trim();
+    if(!name){ $('#nErr').textContent = 'צריך לתת שם לקבוצה'; return; }
+    const invite = $$('.pick input:checked').map(i => +i.value);
+    const btn = $('#nBtn'); busy(btn, true);
+    try{ const r = await api('POST', '/groups', { name, per, invite }); HOME = null; location.hash = '#/g/' + r.id; }
+    catch(err){ busy(btn, false); $('#nErr').textContent = err.message; }
+  };
+}
+
+/* ---------- friends ---------- */
+async function renderFriends(){
+  if(!HOME) app.innerHTML = `<div class="state"><div class="spinner"></div></div>`;
+  const pending = ls.get('mx_pending_add', null);
+  if(pending){
+    ls.del('mx_pending_add');
+    if(location.hash.startsWith('#/add/')) history.replaceState(null, '', '#/friends');
+    if(!ME || pending.toLowerCase() !== ME.username.toLowerCase()){
+      try{ const r = await api('POST', '/friends/request', { username: pending }); toast(r.rel === 'friends' ? 'אתם חברים עכשיו' : 'שלחת בקשת חברות ל-' + pending); HOME = null; }
+      catch(e){ toast(e.message); }
+    }
+  }
+  let term = '';
+  const draw = () => {
+    const H = HOME;
+    app.innerHTML = `
+      <div class="sec"><h2>חברים</h2><small>${H.friends.length ? plural(H.friends.length, 'חבר אחד', 'חברים') : ''}</small></div>
+      <div class="card">
+        <label for="search">חיפוש לפי שם משתמש</label>
+        <input type="search" class="ltr" id="search" placeholder="למשל roy" autocapitalize="off" spellcheck="false" value="${esc(term)}">
+        <div class="list" id="results" style="margin-top:10px"></div>
+        <button class="btn alt sm full" id="inviteApp" style="margin-top:14px">${IC.wa}הזמן חבר שעוד אין לו משתמש</button>
+      </div>
+      ${H.incoming.length ? `<h3>בקשות חברות</h3><div class="list">${H.incoming.map(u => `
+        <div class="item invite">${avatar(u)}<div class="grow"><b>${esc(u.display)}</b><small dir="ltr" style="text-align:right">@${esc(u.username)}</small></div>
+          <div class="acts"><button class="btn xs" data-fa="${u.id}">אשר</button><button class="btn xs alt" data-fr="${u.id}" aria-label="דחה">${IC.x}</button></div></div>`).join('')}</div>` : ''}
+      <h3>החברים שלי</h3>
+      ${H.friends.length ? `<div class="list">${H.friends.map(u => `
+        <div class="item">${avatar(u)}<div class="grow"><b>${esc(u.display)}</b><small dir="ltr" style="text-align:right">@${esc(u.username)}</small></div></div>`).join('')}</div>`
+        : `<div class="card empty"><b>עוד אין חברים</b>חפש חבר לפי שם המשתמש שלו, או שלח לו הזמנה בוואטסאפ.</div>`}
+      ${H.outgoing.length ? `<h3>מחכים לאישור</h3><div class="list">${H.outgoing.map(u => `
+        <div class="item">${avatar(u)}<div class="grow"><b>${esc(u.display)}</b><small>עוד לא אישר</small></div>
+          <div class="acts"><button class="linkbtn" data-fr="${u.id}">בטל</button></div></div>`).join('')}</div>` : ''}
+    `;
+    const input = $('#search');
+    let t;
+    input.oninput = () => { term = input.value.trim(); clearTimeout(t); t = setTimeout(search, 300); };
+    if(term) search();
+    $('#inviteApp').onclick = () => shareText(`בוא תצטרף אליי ל-Jaming, פלייליסטים משותפים עם החברים. שם המשתמש שלי: ${ME.username}`, location.origin + '/#/add/' + ME.username);
+    $$('[data-fa]').forEach(b => b.onclick = () => act(b, async () => { await api('POST', '/friends/accept', { userId: +b.dataset.fa }); await loadHome(); renderNav('friends'); draw(); toast('אתם חברים עכשיו'); }));
+    $$('[data-fr]').forEach(b => b.onclick = () => act(b, async () => { await api('POST', '/friends/remove', { userId: +b.dataset.fr }); await loadHome(); renderNav('friends'); draw(); }));
+  };
+  async function search(){
+    const box = $('#results'); if(!box) return;
+    if(term.replace(/^@/, '').length < 2){ box.innerHTML = ''; return; }
+    const q = term;
+    let r; try{ r = await api('GET', '/users/search?q=' + encodeURIComponent(q)); }catch(e){ return; }
+    if(q !== term) return;
+    if(!r.users.length){ box.innerHTML = `<p class="hint" style="margin:0">לא מצאנו. אולי עוד אין לו משתמש? שלח לו הזמנה.</p>`; return; }
+    const label = { none:'הוסף', sent:'נשלח', received:'אשר', friends:'חברים' };
+    box.innerHTML = r.users.map(u => `
+      <div class="item">${avatar(u)}<div class="grow"><b>${esc(u.display)}</b><small dir="ltr" style="text-align:right">@${esc(u.username)}</small></div>
+        <div class="acts">${u.rel === 'none' || u.rel === 'received' ? `<button class="btn xs" data-add="${u.id}">${IC.addUser}${label[u.rel]}</button>` : `<span class="note">${label[u.rel]}</span>`}</div></div>`).join('');
+    $$('[data-add]', box).forEach(b => b.onclick = () => act(b, async () => {
+      const r = await api('POST', '/friends/request', { userId: +b.dataset.add });
+      toast(r.rel === 'friends' ? 'אתם חברים עכשיו' : 'בקשת החברות נשלחה');
+      await loadHome(); renderNav('friends'); draw();
+    }));
+  }
+  if(HOME) draw();
+  try{ await loadHome(); renderNav('friends'); draw(); }catch(e){ if(!HOME){ app.innerHTML = `<div class="state"><h2>לא הצלחנו לטעון</h2><p>${esc(e.message)}</p></div>`; } return; }
+  startPoll(async () => { const before = JSON.stringify(HOME); try{ await loadHome(); }catch(e){ return; } if(JSON.stringify(HOME) !== before){ renderNav('friends'); draw(); } });
+}
+
+/* ---------- me ---------- */
+function renderMe(){
+  app.innerHTML = `
+    <div class="card">
+      <div class="big-user">${avatar(ME)}<div><b id="meName">${esc(ME.display)}</b><small>@${esc(ME.username)}</small></div></div>
+      <p class="hint">שם המשתמש שלך הוא מה שהחברים מחפשים כדי להוסיף אותך.</p>
+      <button class="btn alt sm full" id="shareMe" style="margin-top:14px">${IC.wa}שלח לחברים את שם המשתמש שלי</button>
+    </div>
+    <form class="card" id="nameForm" autocomplete="off">
+      <h2>שינוי שם</h2>
+      <div class="addrow"><input type="text" id="newName" maxlength="24" value="${esc(ME.display)}"><button class="btn" type="submit" id="nameBtn" aria-label="שמור">${IC.check}</button></div>
+    </form>
+    <div class="center"><button class="btn alt sm" id="logout">יציאה מהמשתמש</button></div>`;
+  $('#shareMe').onclick = () => shareText(`תוסיף אותי ב-Jaming, שם המשתמש שלי: ${ME.username}`, location.origin + '/#/add/' + ME.username);
+  $('#nameForm').onsubmit = e => { e.preventDefault(); const b = $('#nameBtn'); act(b, async () => {
+    const display = $('#newName').value.trim(); await api('POST', '/profile', { display });
+    ME.display = display; ls.set('mx_me', ME); $('#meName').textContent = display; toast('השם עודכן');
+  }); };
+  $('#logout').onclick = async () => { try{ await api('POST', '/logout'); }catch(e){} logoutLocal(); };
+}
+
+/* ---------- group ---------- */
+let G = null, order = null, playing = false, composeKey = null;
+
+async function openGroup(id){
+  $('#topAction').innerHTML = `<a class="iconbtn" href="#/" aria-label="חזרה">${IC.back}</a>`;
+  app.innerHTML = `<div class="state"><div class="spinner"></div><p>טוען את הקבוצה...</p></div>`;
+  G = null; order = null; composeKey = null;
+  try{ G = await api('GET', '/groups/' + id); }
+  catch(e){ app.innerHTML = `<div class="state"><h2>אופס</h2><p>${esc(e.message)}</p><a class="btn" href="#/">לקבוצות שלי</a></div>`; return; }
+  G.sig = JSON.stringify(G);
+  renderGroupShell();
+  renderGroup();
+  startPoll(refreshGroup, 5000);
+}
+async function refreshGroup(){
+  if(!G) return;
+  try{
+    const d = await api('GET', '/groups/' + G.group.id);
+    const sig = JSON.stringify(d);
+    if(sig !== G.sig){ G = d; G.sig = sig; renderGroup(); }
+  }catch(e){}
+}
+function renderGroupShell(){
+  app.innerHTML = `
+    <div class="gtitle" id="gTitle"></div>
+    <div class="meta" id="gMeta"></div>
+    <div class="members" id="gMembers"></div>
+    <div id="gInvite"></div>
+    <div id="gCompose"></div>
+    <div id="gPlay"></div>
+    <div id="gTracks"></div>
+    <div class="center" id="gLeave"></div>`;
+}
+function renderGroup(){
+  const g = G.group, songs = G.songs, members = G.members;
+  const joined = members.filter(m => m.status === 'joined');
+  $('#gTitle').textContent = g.name;
+  $('#gMeta').textContent = `${plural(G.songCount, 'שיר אחד', 'שירים')} · ${plural(joined.length, 'חבר אחד', 'חברים')} · עד ${plural(g.per, 'שיר אחד', 'שירים')} לכל אחד`;
+  $('#gMembers').innerHTML = members.map(m => `<span class="chip${m.id === ME.id ? ' me' : ''}${m.status === 'invited' ? ' pending' : ''}"><span class="dot" style="background:${esc(m.color)}"></span>${esc(m.display)}${m.id === ME.id ? ' (אני)' : ''}${m.status === 'invited' ? ' · הוזמן' : ''}</span>`).join('');
+
+  if(G.myStatus === 'invited'){
+    const inviter = members.find(m => m.status === 'joined');
+    $('#gInvite').innerHTML = '';
+    $('#gCompose').innerHTML = `<div class="banner"><p>הוזמנת לקבוצה הזאת. מצטרף?</p><div class="row"><button class="btn" id="accBtn">הצטרף</button><button class="btn alt" id="decBtn">לא תודה</button></div></div>`;
+    $('#accBtn').onclick = e => act(e.currentTarget, async () => { await api('POST', `/groups/${g.id}/accept`); HOME = null; composeKey = null; await refreshGroup(); toast('הצטרפת. עכשיו תוסיף שיר'); });
+    $('#decBtn').onclick = e => act(e.currentTarget, async () => { await api('POST', `/groups/${g.id}/decline`); HOME = null; location.hash = '#/'; });
+    $('#gPlay').innerHTML = ''; $('#gTracks').innerHTML = G.songCount ? `<p class="hint">כבר יש פה ${plural(G.songCount, 'שיר אחד', 'שירים')}. תצטרף כדי לראות ולהוסיף.</p>` : '';
+    $('#gLeave').innerHTML = '';
+    return;
+  }
+  if(!$('#inviteBtn')){
+    $('#gInvite').innerHTML = `<button class="btn alt sm full" id="inviteBtn" style="margin-bottom:22px">${IC.addUser}הזמן עוד חברים</button><div id="invitePanel"></div>`;
+    $('#inviteBtn').onclick = toggleInvite;
+  }
+  const mine = songs.filter(s => s.user_id === ME.id).length;
+  const key = mine + ':' + g.per;
+  if(key !== composeKey){ composeKey = key; renderCompose(mine, g.per); }
+  renderPlay();
+  renderTracks();
+  if(!$('#leaveBtn')){
+    $('#gLeave').innerHTML = `<button class="linkbtn" id="leaveBtn">יציאה מהקבוצה</button>`;
+    $('#leaveBtn').onclick = e => {
+      if(!confirm('לצאת מהקבוצה? השירים שהוספת יימחקו ממנה.')) return;
+      act(e.currentTarget, async () => { await api('POST', `/groups/${g.id}/leave`); HOME = null; location.hash = '#/'; });
+    };
+  }
+}
+
+async function toggleInvite(){
+  const panel = $('#invitePanel');
+  if(panel.innerHTML){ panel.innerHTML = ''; return; }
+  panel.innerHTML = `<div class="card"><div class="spinner"></div></div>`;
+  try{ if(!HOME) await loadHome(); else loadHome().catch(()=>{}); }catch(e){ panel.innerHTML = ''; toast(e.message); return; }
+  const inGroup = new Set(G.members.map(m => m.id));
+  const avail = HOME.friends.filter(f => !inGroup.has(f.id));
+  panel.innerHTML = `<div class="card">
+    <h2>הזמן חברים</h2>
+    ${avail.length ? `<div class="pick">${avail.map(f => `<label>${avatar(f)}<span style="flex:1">${esc(f.display)}</span><input type="checkbox" value="${f.id}"></label>`).join('')}</div>
+      <button class="btn full" id="sendInv">שלח הזמנה</button>`
+    : `<p class="hint" style="margin:0 0 12px">כל החברים שלך כבר בקבוצה. כדי להזמין מישהו אחר, קודם תוסיף אותו כחבר.</p><a class="btn alt sm full" href="#/friends">לחברים</a>`}
+  </div>`;
+  const sb = $('#sendInv');
+  if(sb) sb.onclick = () => act(sb, async () => {
+    const ids = $$('#invitePanel .pick input:checked').map(i => +i.value);
+    if(!ids.length){ toast('סמן לפחות חבר אחד'); return; }
+    const r = await api('POST', `/groups/${G.group.id}/invite`, { userIds: ids });
+    panel.innerHTML = ''; toast(r.invited === 1 ? 'ההזמנה נשלחה' : 'ההזמנות נשלחו'); refreshGroup();
+  });
+}
+
+function renderCompose(mine, per){
+  const box = $('#gCompose');
+  const left = Math.max(0, per - mine);
+  const pips = Array.from({ length: per }, (_, i) => `<span class="pip${i < mine ? ' on' : ''}"></span>`).join('');
+  if(left === 0){
+    box.innerHTML = `<div class="card"><h2>השירים שלך בפנים</h2><div class="quota">${pips}<span>${mine} מתוך ${per}</span></div>
+      <p class="hint">רוצה להחליף? מחק שיר שלך מהרשימה ותוסיף אחר.</p></div>`;
+    return;
+  }
+  box.innerHTML = `
+    <form class="card" id="addForm" autocomplete="off">
+      <h2>תוסיף שיר</h2>
+      <div class="addrow">
+        <input type="text" id="songInput" placeholder="קישור מיוטיוב / ספוטיפיי או שם של שיר" maxlength="300">
+        <button class="btn" id="addBtn" type="submit" aria-label="הוסף">${IC.plus}</button>
+      </div>
+      <div class="quota">${pips}<span>${left === 1 ? 'נשאר לך שיר אחד' : 'נשארו לך ' + left + ' שירים'}</span></div>
+      <p class="hint">הכי טוב: פותחים את השיר ביוטיוב, לוחצים "שיתוף", מעתיקים ומדביקים כאן.</p>
+    </form>`;
+  $('#addForm').onsubmit = async e => {
+    e.preventDefault();
+    const input = $('#songInput').value.trim(); if(!input) return;
+    const btn = $('#addBtn'); busy(btn, true);
+    try{ await api('POST', `/groups/${G.group.id}/songs`, { input }); $('#songInput').value = ''; $('#songInput').blur(); await refreshGroup(); toast('השיר נוסף'); }
+    catch(err){ toast(err.message); }
+    finally{ if(document.body.contains(btn)) busy(btn, false); }
+  };
+}
+
+/* ---------- player ---------- */
+function sorted(list){
+  if(!order) return list;
+  const pos = new Map(order.map((id, i) => [id, i]));
+  return list.slice().sort((a, b) => (pos.has(a.id) ? pos.get(a.id) : 1e9) - (pos.has(b.id) ? pos.get(b.id) : 1e9));
+}
+const playable = () => sorted(G.songs.filter(s => s.yt));
+function renderPlay(){
+  const box = $('#gPlay');
+  if(!G.songs.length){ box.innerHTML = ''; return; }
+  if(!$('#playBtns', box)) box.innerHTML = `<div id="playerSlot"></div><div class="actions" id="playBtns"></div>`;
+  const list = playable(), ids = list.map(s => s.yt);
+  $('#playBtns').innerHTML = ids.length ? `
+      <button class="btn dark wide" id="playHere">${playing ? IC.stop + 'עצור' : IC.play + 'נגן כאן את כל הפלייליסט'}</button>
+      <a class="btn" href="https://www.youtube.com/watch_videos?video_ids=${ids.slice(0, 50).join(',')}" target="_blank" rel="noopener">${IC.yt}פתח ביוטיוב</a>
+      <button class="btn alt" id="shuffleBtn">${IC.shuffle}ערבב</button>`
+    : `<p class="note wide">כדי לנגן, צריך לפחות שיר אחד עם קישור מיוטיוב.</p>`;
+  if(!ids.length) return;
+  $('#playHere').onclick = () => playing ? stopPlayer() : startPlayer();
+  $('#shuffleBtn').onclick = () => {
+    const arr = list.map(s => s.id);
+    for(let i = arr.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+    order = arr; renderTracks(); renderPlay();
+    if(playing) startPlayer();
+    toast('הסדר עורבב');
+  };
+}
+function startPlayer(){
+  const ids = playable().map(s => s.yt);
+  if(!ids.length) return;
+  const src = `https://www.youtube-nocookie.com/embed/${ids[0]}?autoplay=1&rel=0&playsinline=1` + (ids.length > 1 ? `&playlist=${ids.slice(1).join(',')}` : '');
+  $('#playerSlot').innerHTML = `<div class="player"><iframe src="${src}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="נגן"></iframe></div>`;
+  playing = true; document.body.classList.add('playing');
+  renderPlay();
+  $('#playerSlot').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+function stopPlayer(silent){
+  playing = false; document.body.classList.remove('playing');
+  const slot = $('#playerSlot'); if(slot) slot.innerHTML = '';
+  if(!silent && G) renderPlay();
+}
+
+/* ---------- tracklist ---------- */
+function renderTracks(){
+  const box = $('#gTracks');
+  const songs = sorted(G.songs);
+  const byId = Object.fromEntries(G.members.map(m => [m.id, m]));
+  if(!songs.length){
+    box.innerHTML = `<div class="card empty"><b>הפלייליסט עוד ריק</b>תוסיף את השיר הראשון. החברים יראו אותו מיד.</div>`;
+    return;
+  }
+  const isOwner = G.group.owner === ME.id;
+  box.innerHTML = `
+    <div class="sec"><h2>הפלייליסט</h2><small>${plural(songs.length, 'שיר אחד', 'שירים')}</small></div>
+    <ol class="tracks">${songs.map((s, i) => {
+      const m = byId[s.user_id] || { display:'מישהו שיצא', color:'#bbb' };
+      const canDel = s.user_id === ME.id || isOwner;
+      const thumb = s.thumb ? `<img class="thumb" src="${esc(s.thumb)}" alt="" loading="lazy">` : `<span class="thumb">${IC.note}</span>`;
+      let links = '';
+      if(s.yt) links += `<a href="https://www.youtube.com/watch?v=${esc(s.yt)}" target="_blank" rel="noopener">יוטיוב</a>`;
+      if(s.sp) links += `<a href="${esc(s.sp)}" target="_blank" rel="noopener">ספוטיפיי</a>`;
+      if(!s.yt){
+        links += `<a href="${ytSearch(s.title + (s.artist ? ' ' + s.artist : ''))}" target="_blank" rel="noopener">חפש ביוטיוב</a>`;
+        if(!s.sp) links += `<a href="${spSearch(s.title)}" target="_blank" rel="noopener">חפש בספוטיפיי</a>`;
+        if(s.user_id === ME.id) links += `<button type="button" data-fix="${esc(s.id)}">הדבק קישור יוטיוב</button>`;
+      }
+      return `<li class="track">
+        <span class="num">${String(i + 1).padStart(2, '0')}</span>
+        ${thumb}
+        <div class="tinfo">
+          <div class="ttitle">${esc(s.title)}</div>
+          <div class="tsub">${s.artist ? `<span>${esc(s.artist)}</span><span>·</span>` : ''}<span class="dot" style="background:${esc(m.color)}"></span><span>${esc(m.display)}</span>${!s.yt ? `<span class="tag">${s.sp ? 'רק בספוטיפיי' : 'בלי קישור'}</span>` : ''}</div>
+          <div class="tlinks">${links}</div>
+          <div class="fixslot"></div>
+        </div>
+        ${canDel ? `<button class="del" data-del="${esc(s.id)}" aria-label="מחק">${IC.x}</button>` : ''}
+      </li>`;
+    }).join('')}</ol>
+    ${songs.some(s => !s.yt) ? `<p class="hint">שירים בלי קישור מיוטיוב לא נכנסים לנגן. מי שהוסיף אותם יכול ללחוץ "חפש ביוטיוב", להעתיק את הקישור ולהדביק.</p>` : ''}`;
+  $$('[data-del]', box).forEach(b => b.onclick = () => act(b, async () => {
+    await api('DELETE', `/groups/${G.group.id}/songs/${b.dataset.del}`);
+    if(order) order = order.filter(x => x !== b.dataset.del);
+    await refreshGroup(); toast('השיר נמחק');
+  }));
+  $$('[data-fix]', box).forEach(b => b.onclick = () => {
+    const slot = $('.fixslot', b.closest('.track'));
+    if(slot.innerHTML){ slot.innerHTML = ''; return; }
+    slot.innerHTML = `<form class="fix"><input type="text" placeholder="הדבק כאן קישור מיוטיוב"><button class="btn" type="submit">שמור</button></form>`;
+    const f = $('form', slot), inp = $('input', slot); inp.focus();
+    f.onsubmit = e => { e.preventDefault(); act($('button', f), async () => {
+      await api('PATCH', `/groups/${G.group.id}/songs/${b.dataset.fix}`, { input: inp.value.trim() });
+      inp.blur(); await refreshGroup(); toast('הקישור נשמר');
+    }); };
+  });
+}
+
+route();
+})();
+</script>
+</body>
+</html>
