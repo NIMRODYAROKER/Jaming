@@ -60,7 +60,7 @@ h3{font-family:"Rubik";font-weight:800;font-size:17px;margin:22px 0 10px}
 label{display:block;font-weight:700;font-size:15px;margin:0 0 6px}
 .field{margin-bottom:14px}
 .field small{display:block;color:var(--muted);font-size:13px;margin-top:4px}
-input[type=text],input[type=password],input[type=search]{width:100%;height:50px;border:2px solid var(--ink);border-radius:12px;background:#fff;padding:0 14px;font-size:17px;outline:none;-webkit-appearance:none}
+input[type=text],input[type=password],input[type=search],input[type=email]{width:100%;height:50px;border:2px solid var(--ink);border-radius:12px;background:#fff;padding:0 14px;font-size:17px;outline:none;-webkit-appearance:none}
 input:focus{box-shadow:0 0 0 3px rgba(255,90,31,.35)}
 input::placeholder{color:#A39C90}
 input.ltr{direction:ltr;text-align:right}
@@ -323,9 +323,9 @@ function renderAuth(){
       <p class="lead">פותחים קבוצה, מזמינים חברים, כל אחד מוסיף את השיר שלו ומנגנים הכל ביחד.</p>
       <form class="card" id="authForm" autocomplete="on">
         <div class="tabs"><button type="button" data-m="signup" aria-pressed="${mode === 'signup'}">הרשמה</button><button type="button" data-m="login" aria-pressed="${mode === 'login'}">כניסה</button></div>
-        ${mode === 'signup' ? `<div class="field"><label for="fDisplay">השם שלך</label><input type="text" id="fDisplay" maxlength="24" placeholder="איך החברים קוראים לך" autocomplete="nickname"></div>` : ''}
-        <div class="field"><label for="fUser">שם משתמש</label><input type="text" class="ltr" id="fUser" maxlength="20" placeholder="${mode === 'signup' ? 'באנגלית, למשל nimrod' : 'שם המשתמש שלך'}" autocomplete="username" autocapitalize="off" spellcheck="false">
-          ${mode === 'signup' ? '<small>ככה החברים ימצאו אותך. אותיות באנגלית ומספרים.</small>' : ''}</div>
+        <div class="field"><label for="fEmail">אימייל</label><input type="email" class="ltr" id="fEmail" maxlength="120" placeholder="name@gmail.com" autocomplete="email" autocapitalize="off" spellcheck="false"></div>
+        ${mode === 'signup' ? `<div class="field"><label for="fUser">שם משתמש</label><input type="text" class="ltr" id="fUser" maxlength="20" placeholder="באנגלית, למשל nimrod" autocomplete="username" autocapitalize="off" spellcheck="false">
+          <small>ככה החברים ימצאו אותך. אותיות באנגלית ומספרים.</small></div>` : ''}
         <div class="field"><label for="fPass">סיסמה</label><input type="password" class="ltr" id="fPass" placeholder="${mode === 'signup' ? 'לפחות 6 תווים' : ''}" autocomplete="${mode === 'signup' ? 'new-password' : 'current-password'}"></div>
         <div class="err" id="fErr"></div>
         <button class="btn full" id="fBtn" type="submit">${mode === 'signup' ? 'יצירת משתמש' : 'כניסה'}</button>
@@ -334,8 +334,8 @@ function renderAuth(){
     $('#authForm').onsubmit = async e => {
       e.preventDefault();
       const btn = $('#fBtn'); $('#fErr').textContent = '';
-      const body = { username: $('#fUser').value.trim(), password: $('#fPass').value };
-      if(mode === 'signup') body.display = $('#fDisplay').value.trim();
+      const body = { email: $('#fEmail').value.trim(), password: $('#fPass').value };
+      if(mode === 'signup') body.username = $('#fUser').value.trim();
       busy(btn, true);
       try{
         const r = await api('POST', mode === 'signup' ? '/signup' : '/login', body);
@@ -477,20 +477,12 @@ async function renderFriends(){
 function renderMe(){
   app.innerHTML = `
     <div class="card">
-      <div class="big-user">${avatar(ME)}<div><b id="meName">${esc(ME.display)}</b><small>@${esc(ME.username)}</small></div></div>
+      <div class="big-user">${avatar(ME)}<div><b id="meName">${esc(ME.username)}</b><small>${esc(ME.email || '')}</small></div></div>
       <p class="hint">שם המשתמש שלך הוא מה שהחברים מחפשים כדי להוסיף אותך.</p>
       <button class="btn alt sm full" id="shareMe" style="margin-top:14px">${IC.wa}שלח לחברים את שם המשתמש שלי</button>
     </div>
-    <form class="card" id="nameForm" autocomplete="off">
-      <h2>שינוי שם</h2>
-      <div class="addrow"><input type="text" id="newName" maxlength="24" value="${esc(ME.display)}"><button class="btn" type="submit" id="nameBtn" aria-label="שמור">${IC.check}</button></div>
-    </form>
     <div class="center"><button class="btn alt sm" id="logout">יציאה מהמשתמש</button></div>`;
   $('#shareMe').onclick = () => shareText(`תוסיף אותי ב-Jaming, שם המשתמש שלי: ${ME.username}`, location.origin + '/#/add/' + ME.username);
-  $('#nameForm').onsubmit = e => { e.preventDefault(); const b = $('#nameBtn'); act(b, async () => {
-    const display = $('#newName').value.trim(); await api('POST', '/profile', { display });
-    ME.display = display; ls.set('mx_me', ME); $('#meName').textContent = display; toast('השם עודכן');
-  }); };
   $('#logout').onclick = async () => { try{ await api('POST', '/logout'); }catch(e){} logoutLocal(); };
 }
 

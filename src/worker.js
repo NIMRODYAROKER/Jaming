@@ -148,6 +148,9 @@ export class MixtapeDB extends DurableObject {
       CREATE INDEX IF NOT EXISTS songs_group ON songs(group_id);
       CREATE INDEX IF NOT EXISTS members_user ON members(user_id);
     `);
+    const cols = this.q('PRAGMA table_info(users)').map(c => c.name);
+    if (!cols.includes('email')) this.sql.exec('ALTER TABLE users ADD COLUMN email TEXT');
+    this.sql.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users(email)');
   }
 
   async fetch(request) {
@@ -160,7 +163,8 @@ export class MixtapeDB extends DurableObject {
   }
 
   // ---------- helpers ----------
-  pubUser(u) { return u ? { id: u.id, username: u.username, display: u.display, color: u.color } : null; }
+  pubUser(u) { return u ? { id: u.id, username: u.username, display: u.username, color: u.color } : null; }
+  meUser(u) { return u ? { ...this.pubUser(u), email: u.email || '' } : null; }
   auth(request) {
     const h = request.headers.get('authorization') || '';
     const token = h.startsWith('Bearer ') ? h.slice(7) : '';
@@ -196,28 +200,31 @@ export class MixtapeDB extends DurableObject {
 
     // ----- accounts -----
     if (path === '/api/signup' && method === 'POST') {
+      const email = String(body.email || '').trim().toLowerCase();
       const username = String(body.username || '').trim();
-      const display = String(body.display || '').trim().slice(0, 24);
       const password = String(body.password || '');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 120) bad('כתובת האימייל לא נראית תקינה');
       if (!/^[A-Za-z0-9_.]{3,20}$/.test(username)) bad('שם משתמש: 3 עד 20 אותיות באנגלית, מספרים, נקודה או קו תחתון');
-      if (!display) bad('צריך לכתוב שם');
       if (password.length < 6) bad('סיסמה צריכה לפחות 6 תווים');
+      if (this.one('SELECT id FROM users WHERE email = ?', email)) bad('כבר יש משתמש עם האימייל הזה. נסה להתחבר');
       if (this.one('SELECT id FROM users WHERE username = ?', username)) bad('שם המשתמש הזה תפוס. נסה אחר');
       const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
       const hash = await hashPassword(password, salt);
       const count = this.one('SELECT COUNT(*) AS c FROM users').c;
       const color = COLORS[count % COLORS.length];
-      this.sql.exec('INSERT INTO users (username, display, pass_hash, salt, color, created) VALUES (?, ?, ?, ?, ?, ?)',
-        username, display, hash, salt, color, Date.now());
-      const u = this.one('SELECT * FROM users WHERE username = ?', username);
-      return json({ token: await this.newSession(u.id), me: this.pubUser(u) });
+      this.sql.exec('INSERT INTO users (username, display, pass_hash, salt, color, created, email) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        username, username, hash, salt, color, Date.now(), email);
+      const u = this.one('SELECT * FROM users WHERE email = ?', email);
+      return json({ token: await this.newSession(u.id), me: this.meUser(u) });
     }
     if (path === '/api/login' && method === 'POST') {
-      const u = this.one('SELECT * FROM users WHERE username = ?', String(body.username || '').trim());
-      if (!u) bad('שם משתמש או סיסמה לא נכונים');
+      const id = String(body.email || body.username || '').trim();
+      const u = id.includes('@') ? this.one('SELECT * FROM users WHERE email = ?', id.toLowerCase())
+                                 : this.one('SELECT * FROM users WHERE username = ?', id);
+      if (!u) bad('אימייל או סיסמה לא נכונים');
       const hash = await hashPassword(String(body.password || ''), u.salt);
-      if (!safeEqual(hash, u.pass_hash)) bad('שם משתמש או סיסמה לא נכונים');
-      return json({ token: await this.newSession(u.id), me: this.pubUser(u) });
+      if (!safeEqual(hash, u.pass_hash)) bad('אימייל או סיסמה לא נכונים');
+      return json({ token: await this.newSession(u.id), me: this.meUser(u) });
     }
 
     const me = this.auth(request);
@@ -227,13 +234,6 @@ export class MixtapeDB extends DurableObject {
       this.sql.exec('DELETE FROM sessions WHERE token = ?', token);
       return json({ ok: true });
     }
-    if (path === '/api/profile' && method === 'POST') {
-      const display = String(body.display || '').trim().slice(0, 24);
-      if (!display) bad('צריך לכתוב שם');
-      this.sql.exec('UPDATE users SET display = ? WHERE id = ?', display, me.id);
-      return json({ ok: true });
-    }
-
     // Everything the home screen needs, in one call
     if (path === '/api/home' && method === 'GET') return json(this.home(me));
 
@@ -242,8 +242,8 @@ export class MixtapeDB extends DurableObject {
       const term = (url.searchParams.get('q') || '').trim().replace(/^@/, '');
       if (term.length < 2) return json({ users: [] });
       const like = '%' + term.replace(/[%_]/g, '') + '%';
-      const rows = this.q('SELECT * FROM users WHERE id != ? AND (username LIKE ? OR display LIKE ?) ORDER BY (username = ? COLLATE NOCASE) DESC, username LIMIT 12',
-        me.id, like, like, term);
+      const rows = this.q('SELECT * FROM users WHERE id != ? AND (username LIKE ?) ORDER BY (username = ? COLLATE NOCASE) DESC, username LIMIT 12',
+        me.id, like, term);
       return json({ users: rows.map(u => ({ ...this.pubUser(u), rel: this.relation(me.id, u.id) })) });
     }
     if (path === '/api/friends/request' && method === 'POST') {
@@ -379,9 +379,9 @@ export class MixtapeDB extends DurableObject {
   }
 
   home(me) {
-    const rows = this.q(`SELECT f.*, u.id AS uid, u.username, u.display, u.color FROM friendships f
+    const rows = this.q(`SELECT f.*, u.id AS uid, u.username, u.username AS display, u.color FROM friendships f
       JOIN users u ON u.id = CASE WHEN f.a = ? THEN f.b ELSE f.a END
-      WHERE f.a = ? OR f.b = ? ORDER BY u.display`, me.id, me.id, me.id);
+      WHERE f.a = ? OR f.b = ? ORDER BY u.username COLLATE NOCASE`, me.id, me.id, me.id);
     const pub = r => ({ id: r.uid, username: r.username, display: r.display, color: r.color });
     const friends = rows.filter(r => r.status === 'accepted').map(pub);
     const incoming = rows.filter(r => r.status === 'pending' && r.requester !== me.id).map(pub);
@@ -396,7 +396,7 @@ export class MixtapeDB extends DurableObject {
       inviters[g.invited_by] = this.pubUser(this.one('SELECT * FROM users WHERE id = ?', g.invited_by));
     }
     return {
-      me: this.pubUser(me), friends, incoming, outgoing,
+      me: this.meUser(me), friends, incoming, outgoing,
       invites: groups.filter(g => g.status === 'invited').map(g => ({ id: g.id, name: g.name, people: g.people, by: inviters[g.invited_by] || null })),
       groups: groups.filter(g => g.status === 'joined').map(g => ({ id: g.id, name: g.name, songs: g.songs, people: g.people, per: g.per }))
     };
@@ -406,7 +406,7 @@ export class MixtapeDB extends DurableObject {
     const g = this.one('SELECT * FROM groups WHERE id = ?', gid);
     const mine = g && this.membership(gid, me.id);
     if (!g || !mine) throw new HttpError(404, 'הקבוצה לא נמצאה, או שאין לך הזמנה אליה');
-    const members = this.q(`SELECT u.id, u.username, u.display, u.color, m.status, m.created FROM members m JOIN users u ON u.id = m.user_id
+    const members = this.q(`SELECT u.id, u.username, u.username AS display, u.color, m.status, m.created FROM members m JOIN users u ON u.id = m.user_id
       WHERE m.group_id = ? ORDER BY m.status = 'invited', m.created`, gid);
     const songs = mine.status === 'joined'
       ? this.q('SELECT id, user_id, title, artist, yt, sp, thumb, q, created FROM songs WHERE group_id = ? ORDER BY created', gid)
