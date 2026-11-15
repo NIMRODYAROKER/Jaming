@@ -6,20 +6,44 @@ import { DurableObject } from 'cloudflare:workers';
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname === '/api/search') {
-      try { return json({ results: await searchSongs(url.searchParams.get('q') || '') }); }
-      catch (e) { return json({ results: [] }); }
+    // Security: encrypted connection (https) only
+    if (url.protocol === 'http:' && url.hostname !== 'localhost') {
+      url.protocol = 'https:';
+      return Response.redirect(url.toString(), 301);
     }
-    if (url.pathname === '/api/yt') {
-      return json({ id: await findYouTube(url.searchParams.get('title') || '', url.searchParams.get('artist') || '') });
-    }
+    // All /api calls (including song search) go through the database object, which rate-limits them
     if (url.pathname.startsWith('/api/')) {
       const stub = env.DB.get(env.DB.idFromName('main'));
-      return stub.fetch(request);
+      return withSecurityHeaders(await stub.fetch(request));
     }
-    return env.ASSETS.fetch(request);
+    return withSecurityHeaders(await env.ASSETS.fetch(request));
   }
 };
+
+// ---------- security ----------
+function withSecurityHeaders(res) {
+  const out = new Response(res.body, res);
+  out.headers.set('strict-transport-security', 'max-age=31536000; includeSubDomains');
+  out.headers.set('x-content-type-options', 'nosniff');
+  out.headers.set('x-frame-options', 'DENY');
+  out.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+  out.headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
+  return out;
+}
+const SESSION_DAYS = 60;
+const MAX_GROUPS = 50;
+class Limiter {
+  constructor() { this.hits = new Map(); }
+  count(key, windowMs) {
+    const now = Date.now(), arr = (this.hits.get(key) || []).filter(t => t > now - windowMs);
+    this.hits.set(key, arr); return arr;
+  }
+  over(key, max, windowMs) { return this.count(key, windowMs).length >= max; }
+  add(key, windowMs) { const arr = this.count(key, windowMs); arr.push(Date.now()); }
+  clear(key) { this.hits.delete(key); }
+  sweep() { if (this.hits.size > 5000) this.hits.clear(); }
+}
+const isJpeg = (b64) => b64.startsWith('/9j/');
 
 const COLORS = ['#FF5A1F', '#2F6BFF', '#12A26B', '#C2399B', '#E8A500', '#7A4DFF', '#00A3B4', '#D9363E', '#5B8C00', '#B5651D'];
 
@@ -155,6 +179,8 @@ export class MixtapeDB extends DurableObject {
     this.sql = ctx.storage.sql;
     this.lookup = oembed;
     this.ytFind = findYouTube;
+    this.search = searchSongs;
+    this.limiter = new Limiter();
     this.migrate();
   }
 
@@ -215,6 +241,15 @@ export class MixtapeDB extends DurableObject {
     if (!cols.includes('photo')) this.sql.exec('ALTER TABLE users ADD COLUMN photo TEXT');
     if (!cols.includes('photo_v')) this.sql.exec('ALTER TABLE users ADD COLUMN photo_v INTEGER NOT NULL DEFAULT 0');
     this.sql.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_email ON users(email)');
+    // security log: failed logins and lockouts
+    this.sql.exec('CREATE TABLE IF NOT EXISTS security_log (t INTEGER NOT NULL, kind TEXT NOT NULL, who TEXT, ip TEXT)');
+    // old sessions expire
+    this.sql.exec('DELETE FROM sessions WHERE created < ?', Date.now() - SESSION_DAYS * 864e5);
+  }
+  secLog(kind, who, ip) {
+    this.sql.exec('INSERT INTO security_log (t, kind, who, ip) VALUES (?, ?, ?, ?)', Date.now(), kind, who || '', ip || '');
+    this.sql.exec('DELETE FROM security_log WHERE t < ?', Date.now() - 30 * 864e5);
+    console.warn('[security]', kind, who || '', ip || '');
   }
 
   async fetch(request) {
@@ -233,7 +268,7 @@ export class MixtapeDB extends DurableObject {
     const h = request.headers.get('authorization') || '';
     const token = h.startsWith('Bearer ') ? h.slice(7) : '';
     if (!token) throw new HttpError(401, 'צריך להתחבר');
-    const row = this.one('SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?', token);
+    const row = this.one('SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.created > ?', token, Date.now() - SESSION_DAYS * 864e5);
     if (!row) throw new HttpError(401, 'צריך להתחבר');
     return row;
   }
@@ -261,9 +296,25 @@ export class MixtapeDB extends DurableObject {
       try { body = await request.json(); } catch (e) { body = {}; }
     }
     let m;
+    const ip = request.headers.get('cf-connecting-ip') || 'local';
+    const L = this.limiter; L.sweep();
+    if (L.over('req:' + ip, 240, 60e3)) throw new HttpError(429, 'יותר מדי בקשות. חכה דקה ונסה שוב');
+    L.add('req:' + ip, 60e3);
+
+    // ----- song search (no login needed, but limited) -----
+    if (path === '/api/search' || path === '/api/yt') {
+      if (L.over('look:' + ip, 40, 60e3)) throw new HttpError(429, 'יותר מדי חיפושים. חכה דקה');
+      L.add('look:' + ip, 60e3);
+      if (path === '/api/search') {
+        try { return json({ results: await this.search(url.searchParams.get('q') || '') }); }
+        catch (e) { return json({ results: [] }); }
+      }
+      return json({ id: await this.ytFind(String(url.searchParams.get('title') || '').slice(0, 150), String(url.searchParams.get('artist') || '').slice(0, 100)) });
+    }
 
     // ----- accounts -----
     if (path === '/api/signup' && method === 'POST') {
+      if (L.over('signup:' + ip, 5, 3600e3)) { this.secLog('signup-limit', '', ip); throw new HttpError(429, 'נפתחו יותר מדי משתמשים מהמכשיר הזה. נסה שוב בעוד שעה'); }
       const email = String(body.email || '').trim().toLowerCase();
       const username = String(body.username || '').trim();
       const password = String(body.password || '');
@@ -279,15 +330,22 @@ export class MixtapeDB extends DurableObject {
       this.sql.exec('INSERT INTO users (username, display, pass_hash, salt, color, created, email) VALUES (?, ?, ?, ?, ?, ?, ?)',
         username, username, hash, salt, color, Date.now(), email);
       const u = this.one('SELECT * FROM users WHERE email = ?', email);
+      L.add('signup:' + ip, 3600e3);
       return json({ token: await this.newSession(u.id), me: this.meUser(u) });
     }
     if (path === '/api/login' && method === 'POST') {
-      const id = String(body.email || body.username || '').trim();
+      const id = String(body.email || body.username || '').trim().slice(0, 120);
+      const acc = 'fail:' + id.toLowerCase(), ipk = 'failip:' + ip, WIN = 15 * 60e3;
+      // temporary lock after many failed attempts
+      if (L.over(acc, 5, WIN) || L.over(ipk, 20, WIN)) throw new HttpError(429, 'יותר מדי ניסיונות כניסה. חכה 15 דקות ונסה שוב');
       const u = id.includes('@') ? this.one('SELECT * FROM users WHERE email = ?', id.toLowerCase())
                                  : this.one('SELECT * FROM users WHERE username = ?', id);
-      if (!u) bad('אימייל או סיסמה לא נכונים');
-      const hash = await hashPassword(String(body.password || ''), u.salt);
-      if (!safeEqual(hash, u.pass_hash)) bad('אימייל או סיסמה לא נכונים');
+      if (!u || !safeEqual(await hashPassword(String(body.password || ''), u.salt), u.pass_hash)) {
+        L.add(acc, WIN); L.add(ipk, WIN);
+        this.secLog(L.over(acc, 5, WIN) ? 'login-locked' : 'login-failed', id, ip);
+        bad('אימייל או סיסמה לא נכונים');
+      }
+      L.clear(acc);
       return json({ token: await this.newSession(u.id), me: this.meUser(u) });
     }
 
@@ -319,6 +377,7 @@ export class MixtapeDB extends DurableObject {
         const mm = String(body.data || '').match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/);
         if (!mm) bad('התמונה לא נקלטה. נסה תמונה אחרת');
         if (mm[1].length > 400000) bad('התמונה גדולה מדי');
+        if (!isJpeg(mm[1])) bad('אפשר להעלות רק תמונה');
         this.sql.exec('UPDATE users SET photo = ?, photo_v = photo_v + 1 WHERE id = ?', mm[1], me.id);
       }
       return json({ me: this.meUser(this.one('SELECT * FROM users WHERE id = ?', me.id)) });
@@ -330,6 +389,8 @@ export class MixtapeDB extends DurableObject {
       if (next.length < 6) bad('הסיסמה החדשה צריכה לפחות 6 תווים');
       const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
       this.sql.exec('UPDATE users SET pass_hash = ?, salt = ? WHERE id = ?', await hashPassword(next, salt), salt, me.id);
+      // log out every other device that used the old password
+      this.sql.exec('DELETE FROM sessions WHERE user_id = ? AND token != ?', me.id, (request.headers.get('authorization') || '').slice(7));
       return json({ ok: true });
     }
 
@@ -363,6 +424,7 @@ export class MixtapeDB extends DurableObject {
         this.sql.exec("UPDATE friendships SET status = 'accepted' WHERE a = ? AND b = ?", a, b);
         return json({ ok: true, rel: 'friends' });
       }
+      if (!f && this.one("SELECT COUNT(*) AS c FROM friendships WHERE requester = ? AND status = 'pending'", me.id).c >= 100) bad('יש לך יותר מדי בקשות חברות שמחכות');
       if (!f) this.sql.exec("INSERT INTO friendships (a, b, requester, status, created) VALUES (?, ?, ?, 'pending', ?)", a, b, me.id, Date.now());
       return json({ ok: true, rel: 'sent' });
     }
@@ -383,6 +445,7 @@ export class MixtapeDB extends DurableObject {
     if (path === '/api/groups' && method === 'POST') {
       const name = String(body.name || '').trim().slice(0, 40);
       if (!name) bad('צריך לתת שם לקבוצה');
+      if (this.one('SELECT COUNT(*) AS c FROM members WHERE user_id = ?', me.id).c >= MAX_GROUPS) bad(`אפשר להיות בעד ${MAX_GROUPS} קבוצות`);
       const per = Math.min(10, Math.max(1, parseInt(body.per, 10) || 1));
       const id = randomId(8);
       const now = Date.now();
